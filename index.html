@@ -1,0 +1,3331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ótica VisionPlus - Sistema Premium Completo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --info-color: #17a2b8;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f5f7fa; color: #333; line-height: 1.6; }
+        
+        /* Layout Geral */
+        .container { display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Login */
+        .login-container { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 9999;
+        }
+        .login-box { 
+            background: white; 
+            border-radius: var(--border-radius); 
+            box-shadow: var(--shadow); 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 2rem; 
+            text-align: center; 
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+        
+        .login-input:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+
+        /* Header */
+        header { background-color: var(--primary-color); color: white; padding: 1rem; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; }
+        .logo-container { display: flex; align-items: center; gap: 15px; }
+        .logo-img { max-height: 50px; border-radius: 4px; background: white; padding: 2px; }
+        
+        /* Nav */
+        nav { background-color: var(--secondary-color); padding: 0.5rem; position: sticky; top: 0; z-index: 100; }
+        .nav-menu { display: flex; list-style: none; gap: 5px; flex-wrap: wrap; justify-content: center; }
+        .nav-menu a { color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: var(--border-radius); display: flex; align-items: center; gap: 8px; transition: 0.3s; font-size: 0.9rem; }
+        .nav-menu a:hover, .nav-menu a.active { background-color: rgba(255,255,255,0.2); font-weight: bold; }
+
+        /* Conteúdo */
+        main { flex: 1; padding: 1.5rem; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .page { display: none; animation: fadeIn 0.4s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .page-title { color: var(--primary-color); font-size: 1.6rem; }
+
+        /* Cards e Dashboard */
+        .cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card { background: white; padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); border-left: 5px solid var(--secondary-color); position: relative; overflow: hidden; }
+        .card-value { font-size: 1.8rem; font-weight: bold; color: var(--secondary-color); margin-top: 10px; }
+        .card-alert { border-left-color: var(--accent-color); }
+        .card-alert .card-value { color: var(--accent-color); }
+        .card-info { border-left-color: var(--warning-color); }
+        .card-success { border-left-color: var(--success-color); }
+
+        /* Tabelas */
+        .table-responsive { overflow-x: auto; background: white; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: var(--primary-color); font-weight: 600; }
+        tr:hover { background-color: #f1f1f1; }
+        .prod-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd; }
+        .table-striped tbody tr:nth-child(odd) { background-color: #f9f9f9; }
+
+        /* Badges de Status */
+        .status { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .status-pendente { background: #fff3cd; color: #856404; }
+        .status-concluido { background: #d4edda; color: #155724; }
+        .status-cancelado { background: #f8d7da; color: #721c24; }
+        .status-processando { background: #d1ecf1; color: #0c5460; }
+        .status-aguardando { background: #f8d7da; color: #721c24; }
+
+        /* Formulários e Botões */
+        .form-container { background: white; padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; }
+        .form-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .form-group { flex: 1; min-width: 200px; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: var(--border-radius); font-size: 1rem; }
+        input:focus, select:focus, textarea:focus { border-color: var(--secondary-color); outline: none; }
+
+        .btn { padding: 10px 15px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; color: white; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-primary { background-color: var(--secondary-color); }
+        .btn-success { background-color: var(--success-color); }
+        .btn-warning { background-color: var(--warning-color); }
+        .btn-danger { background-color: var(--accent-color); }
+        .btn-info { background-color: var(--info-color); }
+        .btn-dark { background-color: var(--dark-color); }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: var(--border-radius); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+        .modal-header { padding: 1rem; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; }
+        .modal-body { padding: 1.5rem; flex: 1; overflow-y: auto; }
+        .modal-footer { padding: 1rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px; background: #f8f9fa; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; }
+
+        /* Componentes Específicos */
+        .image-upload-box { border: 2px dashed #ddd; height: 150px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: var(--border-radius); overflow: hidden; background: #fafafa; }
+        .image-upload-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .payment-row { display: flex; gap: 10px; margin-bottom: 5px; align-items: center; background: #f9f9f9; padding: 5px; border-radius: 4px; }
+
+        /* Dashboard Listas */
+        .dash-list { list-style: none; margin-top: 10px; }
+        .dash-list li { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+        .dash-list li:last-child { border-bottom: none; }
+        .badge-alert { background: var(--accent-color); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; }
+
+        /* Gráficos */
+        .charts-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+        .chart-box { background: white; padding: 1.5rem; border-radius: var(--border-radius); box-shadow: var(--shadow); }
+        .chart-title { font-size: 1rem; color: var(--primary-color); margin-bottom: 1rem; text-align: center; }
+
+        /* Tabs */
+        .tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 1.5rem; }
+        .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-weight: 600; color: var(--dark-color); }
+        .tab.active { border-bottom-color: var(--secondary-color); color: var(--secondary-color); }
+
+        /* Filtros */
+        .filter-bar { background: white; padding: 1rem; border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+
+        /* IMPRESSÃO TÉRMICA */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+            @page { margin: 0; size: auto; }
+            .btn, .no-print { display: none !important; }
+        }
+        
+        .login-error {
+            color: #e74c3c;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <i class="fas fa-glasses fa-3x" style="color: var(--primary-color); margin-bottom: 10px;"></i>
+            <h2>VisionPlus Premium</h2>
+            <p style="color: #666; margin-bottom: 20px;">Sistema Completo de Gestão Ótica</p>
+            <form id="login-form">
+                <input type="text" id="login-user" class="login-input" placeholder="Usuário" required value="admin">
+                <input type="password" id="login-pass" class="login-input" placeholder="Senha" required value="admin">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">ENTRAR</button>
+                <div class="login-error" id="login-error">Usuário ou senha incorretos!</div>
+            </form>
+            <p style="margin-top: 15px; font-size: 0.8rem; color: #666;">Use: admin / admin</p>
+        </div>
+    </div>
+
+    <div id="app-container" class="container" style="display: none;">
+        <header>
+            <div class="logo-container">
+                <img id="header-logo" class="logo-img" src="" alt="Logo" style="display: none;">
+                <div>
+                    <h2 id="store-name-display">Ótica VisionPlus Premium</h2>
+                    <small>Sistema Integrado v3.0</small>
+                </div>
+            </div>
+            <div>
+                <span id="user-display" style="margin-right: 15px;"><i class="fas fa-user"></i> Admin</span>
+                <button class="btn btn-sm btn-info" id="backup-btn" title="Backup"><i class="fas fa-download"></i></button>
+                <button class="btn btn-sm btn-danger" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Sair</button>
+            </div>
+        </header>
+
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="#" class="nav-link active" data-page="dashboard"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="#" class="nav-link" data-page="vendas"><i class="fas fa-shopping-cart"></i> PDV / Vendas</a></li>
+                <li><a href="#" class="nav-link" data-page="ordens-servico"><i class="fas fa-tools"></i> Ordens Serviço</a></li>
+                <li><a href="#" class="nav-link" data-page="orcamentos"><i class="fas fa-file-invoice-dollar"></i> Orçamentos</a></li>
+                <li><a href="#" class="nav-link" data-page="clientes"><i class="fas fa-users"></i> Clientes</a></li>
+                <li><a href="#" class="nav-link" data-page="produtos"><i class="fas fa-glasses"></i> Produtos</a></li>
+                <li><a href="#" class="nav-link" data-page="consultas"><i class="fas fa-eye"></i> Consultas</a></li>
+                <li><a href="#" class="nav-link" data-page="fornecedores"><i class="fas fa-truck"></i> Fornecedores</a></li>
+                <li><a href="#" class="nav-link" data-page="relatorios"><i class="fas fa-chart-bar"></i> Relatórios</a></li>
+                <li><a href="#" class="nav-link" data-page="config"><i class="fas fa-cog"></i> Configurações</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <!-- DASHBOARD -->
+            <section id="dashboard-page" class="page active">
+                <div class="page-header">
+                    <h2 class="page-title">Dashboard - Visão Geral</h2>
+                    <div>
+                        <button class="btn btn-warning" onclick="gerarRelatorioDiario()"><i class="fas fa-print"></i> Relatório Diário</button>
+                        <button class="btn btn-primary" onclick="navTo('vendas'); openVendaModal();"><i class="fas fa-bolt"></i> Venda Rápida</button>
+                    </div>
+                </div>
+
+                <div class="cards-container">
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-money-bill-wave"></i> Vendas Hoje</div>
+                        <div class="card-value" id="dash-vendas-hoje">R$ 0,00</div>
+                    </div>
+                    <div class="card card-success">
+                        <div class="card-title"><i class="fas fa-calendar-check"></i> OS Hoje</div>
+                        <div class="card-value" id="dash-os-hoje">0</div>
+                    </div>
+                    <div class="card card-alert">
+                        <div class="card-title"><i class="fas fa-exclamation-triangle"></i> Estoque Baixo</div>
+                        <ul id="dash-estoque-baixo" class="dash-list">
+                            <li>Carregando...</li>
+                        </ul>
+                    </div>
+                    <div class="card card-info">
+                        <div class="card-title"><i class="fas fa-birthday-cake"></i> Aniversariantes do Mês</div>
+                        <ul id="dash-aniversariantes" class="dash-list">
+                            <li>Carregando...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <div class="chart-title">Vendas dos Últimos 7 Dias</div>
+                        <canvas id="chart-vendas"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <div class="chart-title">Produtos Mais Vendidos</div>
+                        <canvas id="chart-produtos"></canvas>
+                    </div>
+                </div>
+
+                <div class="page-header" style="margin-top: 2rem;">
+                    <h3 class="page-title">Ordens de Serviço Pendentes</h3>
+                    <button class="btn btn-primary" onclick="navTo('ordens-servico'); openOSModal()"><i class="fas fa-plus"></i> Nova OS</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nº OS</th>
+                                <th>Cliente</th>
+                                <th>Data Entrega</th>
+                                <th>Serviço</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-os-pendentes"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PRODUTOS -->
+            <section id="produtos-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Estoque e Produtos</h2>
+                    <div>
+                        <button class="btn btn-warning" onclick="openCompraModal()"><i class="fas fa-shopping-bag"></i> Nova Compra</button>
+                        <button class="btn btn-primary" onclick="openProdutoModal()"><i class="fas fa-plus"></i> Novo Produto</button>
+                    </div>
+                </div>
+                
+                <div class="filter-bar">
+                    <input type="text" id="search-produto" placeholder="Buscar produto..." onkeyup="filterProdutos()">
+                    <select id="filter-categoria" onchange="filterProdutos()">
+                        <option value="">Todas Categorias</option>
+                        <option value="Armacao">Armação</option>
+                        <option value="Lente">Lente</option>
+                        <option value="Solar">Solar</option>
+                        <option value="Acessorio">Acessório</option>
+                    </select>
+                    <select id="filter-estoque" onchange="filterProdutos()">
+                        <option value="">Todo Estoque</option>
+                        <option value="baixo">Estoque Baixo</option>
+                        <option value="critico">Estoque Crítico</option>
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Img</th>
+                                <th>Cód. Barras</th>
+                                <th>Produto</th>
+                                <th>Categoria</th>
+                                <th>Fornecedor</th>
+                                <th>Estoque</th>
+                                <th>Custo</th>
+                                <th>Preço Venda</th>
+                                <th>Margem</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="produtos-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- CLIENTES -->
+            <section id="clientes-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Clientes</h2>
+                    <button class="btn btn-primary" onclick="openClienteModal()"><i class="fas fa-plus"></i> Novo Cliente</button>
+                </div>
+                <div class="filter-bar">
+                    <input type="text" id="search-cliente" placeholder="Buscar por nome, CPF ou telefone..." onkeyup="filterClientes()">
+                    <button class="btn btn-info" onclick="exportarClientes()"><i class="fas fa-download"></i> Exportar</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CPF</th>
+                                <th>Telefone</th>
+                                <th>Nascimento</th>
+                                <th>Última Compra</th>
+                                <th>Total Gasto</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientes-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VENDAS -->
+            <section id="vendas-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Histórico de Vendas</h2>
+                    <div>
+                        <button class="btn btn-warning" onclick="openRelatorioVendasModal()"><i class="fas fa-chart-line"></i> Relatório</button>
+                        <button class="btn btn-primary" onclick="openVendaModal()"><i class="fas fa-plus"></i> Nova Venda</button>
+                    </div>
+                </div>
+                
+                <div class="filter-bar">
+                    <input type="date" id="filter-venda-inicio">
+                    <input type="date" id="filter-venda-fim">
+                    <select id="filter-venda-vendedor">
+                        <option value="">Todos Vendedores</option>
+                    </select>
+                    <button class="btn btn-info" onclick="filtrarVendas()">Filtrar</button>
+                    <button class="btn btn-secondary" onclick="limparFiltrosVendas()">Limpar</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Vendedor</th>
+                                <th>Itens</th>
+                                <th>Total</th>
+                                <th>Comissão</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vendas-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ORDENS DE SERVIÇO -->
+            <section id="ordens-servico-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Ordens de Serviço</h2>
+                    <button class="btn btn-primary" onclick="openOSModal()"><i class="fas fa-plus"></i> Nova OS</button>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="filtrarOS('pendente')">Pendentes</div>
+                    <div class="tab" onclick="filtrarOS('concluido')">Concluídas</div>
+                    <div class="tab" onclick="filtrarOS('cancelado')">Canceladas</div>
+                    <div class="tab" onclick="filtrarOS('todos')">Todas</div>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nº OS</th>
+                                <th>Cliente</th>
+                                <th>Data Entrada</th>
+                                <th>Data Entrega</th>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Responsável</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="os-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ORÇAMENTOS -->
+            <section id="orcamentos-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Orçamentos</h2>
+                    <button class="btn btn-primary" onclick="openVendaModal(true)"><i class="fas fa-plus"></i> Novo Orçamento</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Valor</th>
+                                <th>Validade</th>
+                                <th>WhatsApp</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orcamentos-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- CONSULTAS / RECEITAS -->
+            <section id="consultas-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Consultas e Receitas</h2>
+                    <button class="btn btn-primary" onclick="openConsultaModal()"><i class="fas fa-plus"></i> Nova Consulta</button>
+                </div>
+                
+                <div class="filter-bar">
+                    <input type="text" id="search-consulta" placeholder="Buscar cliente..." onkeyup="filterConsultas()">
+                    <input type="date" id="filter-consulta-data" onchange="filterConsultas()">
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>OD Esférico</th>
+                                <th>OD Cilíndrico</th>
+                                <th>OE Esférico</th>
+                                <th>OE Cilíndrico</th>
+                                <th>ADP</th>
+                                <th>Observações</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="consultas-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- FORNECEDORES -->
+            <section id="fornecedores-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Fornecedores</h2>
+                    <button class="btn btn-primary" onclick="openFornecedorModal()"><i class="fas fa-plus"></i> Novo Fornecedor</button>
+                </div>
+                
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>CNPJ</th>
+                                <th>Contato</th>
+                                <th>Telefone</th>
+                                <th>Produtos</th>
+                                <th>Última Compra</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fornecedores-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- RELATÓRIOS -->
+            <section id="relatorios-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Relatórios e Análises</h2>
+                    <button class="btn btn-success" onclick="gerarRelatorioCompleto()"><i class="fas fa-file-pdf"></i> Gerar Relatório PDF</button>
+                </div>
+                
+                <div class="cards-container">
+                    <div class="card" onclick="abrirRelatorio('vendas')" style="cursor: pointer;">
+                        <div class="card-title"><i class="fas fa-chart-line"></i> Relatório de Vendas</div>
+                        <div class="card-value">Detalhado</div>
+                    </div>
+                    <div class="card" onclick="abrirRelatorio('estoque')" style="cursor: pointer;">
+                        <div class="card-title"><i class="fas fa-boxes"></i> Relatório de Estoque</div>
+                        <div class="card-value">Valor Total</div>
+                    </div>
+                    <div class="card" onclick="abrirRelatorio('clientes')" style="cursor: pointer;">
+                        <div class="card-title"><i class="fas fa-users"></i> Relatório de Clientes</div>
+                        <div class="card-value">Fidelização</div>
+                    </div>
+                    <div class="card" onclick="abrirRelatorio('financeiro')" style="cursor: pointer;">
+                        <div class="card-title"><i class="fas fa-money-bill-wave"></i> Financeiro</div>
+                        <div class="card-value">Fluxo de Caixa</div>
+                    </div>
+                </div>
+
+                <div class="form-container">
+                    <h3>Relatório Personalizado</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Relatório</label>
+                            <select id="relatorio-tipo">
+                                <option value="vendas">Vendas</option>
+                                <option value="produtos">Produtos</option>
+                                <option value="clientes">Clientes</option>
+                                <option value="os">Ordens de Serviço</option>
+                                <option value="financeiro">Financeiro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Período Início</label>
+                            <input type="date" id="relatorio-inicio">
+                        </div>
+                        <div class="form-group">
+                            <label>Período Fim</label>
+                            <input type="date" id="relatorio-fim">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="gerarRelatorioPersonalizado()"><i class="fas fa-play"></i> Gerar Relatório</button>
+                </div>
+
+                <div id="relatorio-resultado" style="margin-top: 2rem;"></div>
+            </section>
+
+            <!-- CONFIGURAÇÕES -->
+            <section id="config-page" class="page">
+                <div class="page-header">
+                    <h2 class="page-title">Configurações da Loja</h2>
+                    <button class="btn btn-success" onclick="salvarConfig()"><i class="fas fa-save"></i> Salvar Alterações</button>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="abrirConfigTab('geral')">Geral</div>
+                    <div class="tab" onclick="abrirConfigTab('vendedores')">Vendedores</div>
+                    <div class="tab" onclick="abrirConfigTab('backup')">Backup</div>
+                    <div class="tab" onclick="abrirConfigTab('impressao')">Impressão</div>
+                </div>
+
+                <div id="config-geral" class="form-container">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome da Loja</label>
+                            <input type="text" id="conf-nome">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone / WhatsApp</label>
+                            <input type="text" id="conf-tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endereço Completo</label>
+                        <input type="text" id="conf-end">
+                    </div>
+                    <div class="form-group">
+                        <label>Mensagem de Rodapé (Recibo)</label>
+                        <input type="text" id="conf-msg" value="Obrigado pela preferência!">
+                    </div>
+                    <div class="form-group">
+                        <label>Comissão Padrão (%)</label>
+                        <input type="number" id="conf-comissao" min="0" max="100" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label>Logo da Loja</label>
+                        <div class="image-upload-box" onclick="document.getElementById('conf-logo-input').click()">
+                            <img id="conf-logo-preview" src="" alt="Clique para carregar logo" style="display:none">
+                            <span id="conf-logo-placeholder">Clique para carregar Logo</span>
+                        </div>
+                        <input type="file" id="conf-logo-input" hidden accept="image/*">
+                    </div>
+                </div>
+
+                <div id="config-vendedores" class="form-container" style="display: none;">
+                    <h3>Vendedores</h3>
+                    <div id="vendedores-list"></div>
+                    <button class="btn btn-primary" onclick="openVendedorModal()"><i class="fas fa-plus"></i> Adicionar Vendedor</button>
+                </div>
+
+                <div id="config-backup" class="form-container" style="display: none;">
+                    <h3>Backup e Restauração</h3>
+                    <p>Faça backup completo do sistema regularmente para evitar perda de dados.</p>
+                    <div class="form-row">
+                        <button class="btn btn-success" onclick="fazerBackup()"><i class="fas fa-download"></i> Fazer Backup</button>
+                        <button class="btn btn-warning" onclick="document.getElementById('restore-input').click()"><i class="fas fa-upload"></i> Restaurar Backup</button>
+                        <input type="file" id="restore-input" hidden accept=".json" onchange="restaurarBackup(this)">
+                    </div>
+                    <div id="backup-info" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius);">
+                        <small>Último backup: <span id="last-backup">Nunca</span></small>
+                    </div>
+                </div>
+
+                <div id="config-impressao" class="form-container" style="display: none;">
+                    <h3>Configurações de Impressão</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Modelo de Impressora</label>
+                            <select id="conf-impressora">
+                                <option value="termica">Térmica 80mm</option>
+                                <option value="laser">Laser A4</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Copias do Comprovante</label>
+                            <input type="number" id="conf-copias" min="1" max="3" value="1">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Texto Adicional no Comprovante</label>
+                        <textarea id="conf-texto-extra" rows="3"></textarea>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL PRODUTO -->
+    <div class="modal" id="modal-produto">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Cadastro de Produto</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-produto">
+                    <input type="hidden" id="prod-id">
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 0 0 150px;">
+                            <label>Foto</label>
+                            <div class="image-upload-box" style="height: 100px;" onclick="document.getElementById('prod-img-input').click()">
+                                <img id="prod-img-preview" src="" style="display:none">
+                                <span id="prod-img-text" style="font-size:0.8rem">Foto</span>
+                            </div>
+                            <input type="file" id="prod-img-input" hidden accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <label>Nome do Produto *</label>
+                            <input type="text" id="prod-nome" required>
+                            <label style="margin-top: 10px;">Código de Barras</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="prod-cod" placeholder="Escaneie ou digite">
+                                <button type="button" class="btn btn-warning btn-sm" onclick="gerarCodigoBarras()">Gerar</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Categoria *</label>
+                            <select id="prod-cat" required>
+                                <option value="Armacao">Armação</option>
+                                <option value="Lente">Lente</option>
+                                <option value="Solar">Solar</option>
+                                <option value="Acessorio">Acessório</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Fornecedor</label>
+                            <select id="prod-fornecedor">
+                                <option value="">Selecione...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Preço Custo *</label><input type="number" step="0.01" id="prod-custo" required></div>
+                        <div class="form-group"><label>Preço Venda *</label><input type="number" step="0.01" id="prod-preco" required onchange="calcularMargem()"></div>
+                        <div class="form-group"><label>Margem (%)</label><input type="text" id="prod-margem" readonly></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Estoque Atual *</label><input type="number" id="prod-qtd" required></div>
+                        <div class="form-group"><label>Estoque Mínimo</label><input type="number" id="prod-min" value="3"></div>
+                        <div class="form-group"><label>Estoque Máximo</label><input type="number" id="prod-max" value="50"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Características</label>
+                        <textarea id="prod-caracteristicas" rows="3" placeholder="Cor, material, tamanho..."></textarea>
+                    </div>
+                    <div style="text-align: center; margin-top: 10px;">
+                        <svg id="barcode-preview"></svg>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarProduto()">Salvar Produto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CLIENTE -->
+    <div class="modal" id="modal-cliente">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Cadastro de Cliente</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-cliente">
+                    <input type="hidden" id="cli-id">
+                    <div class="form-row">
+                        <div class="form-group"><label>Nome Completo *</label><input type="text" id="cli-nome" required></div>
+                        <div class="form-group"><label>CPF</label><input type="text" id="cli-cpf" placeholder="000.000.000-00"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Telefone (WhatsApp) *</label><input type="text" id="cli-tel" placeholder="Ex: 82999999999" required></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="cli-email"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Data Nascimento</label><input type="date" id="cli-nasc"></div>
+                        <div class="form-group"><label>Gênero</label>
+                            <select id="cli-genero">
+                                <option value="">Não informado</option>
+                                <option value="M">Masculino</option>
+                                <option value="F">Feminino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endereço</label>
+                        <input type="text" id="cli-endereco" placeholder="Rua, número, bairro">
+                    </div>
+                    <div class="form-group"><label>Observações</label><textarea id="cli-obs" rows="3"></textarea></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarCliente()">Salvar Cliente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VENDA -->
+    <div class="modal" id="modal-venda">
+        <div class="modal-content" style="max-width: 1000px; height: 95vh;">
+            <div class="modal-header"><h3 id="venda-titulo">Nova Venda</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body" style="display: flex; flex-direction: column;">
+                <div class="form-row" style="background: #f1f1f1; padding: 10px; border-radius: 5px;">
+                    <div class="form-group">
+                        <label>Cliente</label>
+                        <select id="venda-cliente"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Vendedor</label>
+                        <select id="venda-vendedor"></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="venda-data">
+                    </div>
+                </div>
+
+                <div style="margin: 15px 0; display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label style="font-weight: bold; color: var(--secondary-color);">LEITOR DE CÓDIGO DE BARRAS (Focar aqui)</label>
+                        <input type="text" id="venda-search" placeholder="Bipe o produto ou digite o nome e aperte ENTER..." 
+                               style="font-size: 1.2rem; border: 2px solid var(--secondary-color);" autocomplete="off">
+                    </div>
+                    <div style="width: 100px;">
+                        <label>Qtd</label>
+                        <input type="number" id="venda-qtd-add" value="1" min="1" style="height: 48px;">
+                    </div>
+                </div>
+
+                <div style="flex: 1; overflow-y: auto; border: 1px solid #eee; margin-bottom: 15px;">
+                    <table class="table-striped">
+                        <thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Desconto</th><th>Total</th><th>X</th></tr></thead>
+                        <tbody id="venda-itens"></tbody>
+                    </table>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Desconto (R$)</label>
+                            <input type="number" id="venda-desc" value="0" step="0.01" onchange="renderCarrinho()">
+                        </div>
+                        <div class="form-group">
+                            <label>Desconto (%)</label>
+                            <input type="number" id="venda-desc-perc" value="0" min="0" max="100" step="1" onchange="aplicarDescontoPercentual()">
+                        </div>
+                        <div class="form-group" style="text-align: right;">
+                            <div style="font-size: 0.9rem;">Subtotal: <span id="venda-subtotal">R$ 0,00</span></div>
+                            <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-color);">TOTAL: <span id="venda-total">R$ 0,00</span></div>
+                        </div>
+                    </div>
+
+                    <div id="area-pagamento">
+                        <hr style="margin: 10px 0;">
+                        <label>Formas de Pagamento</label>
+                        <div id="venda-pagamentos"></div>
+                        <button class="btn btn-sm btn-primary" onclick="addPagamentoRow()">+ Adicionar Pagamento</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-warning" id="btn-orcamento" onclick="finalizarVenda(true)">Salvar Orçamento</button>
+                <button class="btn btn-success" id="btn-finalizar" onclick="finalizarVenda(false)">Finalizar Venda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ORDEM DE SERVIÇO -->
+    <div class="modal" id="modal-os">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Ordem de Serviço</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-os">
+                    <input type="hidden" id="os-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cliente *</label>
+                            <select id="os-cliente" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data Entrada</label>
+                            <input type="date" id="os-data-entrada" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Data Entrega Prevista *</label>
+                            <input type="date" id="os-data-entrega" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Responsável</label>
+                            <select id="os-responsavel"></select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Serviço *</label>
+                            <select id="os-tipo" required>
+                                <option value="Ajuste">Ajuste</option>
+                                <option value="Manutencao">Manutenção</option>
+                                <option value="Troca de Lentes">Troca de Lentes</option>
+                                <option value="Montagem">Montagem</option>
+                                <option value="Limpeza">Limpeza</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="os-status">
+                                <option value="pendente">Pendente</option>
+                                <option value="processando">Processando</option>
+                                <option value="concluido">Concluído</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição do Serviço *</label>
+                        <textarea id="os-descricao" rows="3" required placeholder="Descreva o serviço a ser realizado..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Valor do Serviço (R$)</label>
+                            <input type="number" step="0.01" id="os-valor">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Sinal (R$)</label>
+                            <input type="number" step="0.01" id="os-sinal">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea id="os-obs" rows="2" placeholder="Observações adicionais..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarOS()">Salvar OS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CONSULTA -->
+    <div class="modal" id="modal-consulta">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Consulta / Receita</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-consulta">
+                    <input type="hidden" id="consulta-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cliente *</label>
+                            <select id="consulta-cliente" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data da Consulta *</label>
+                            <input type="date" id="consulta-data" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Profissional</label>
+                            <input type="text" id="consulta-profissional" placeholder="Nome do oftalmologista">
+                        </div>
+                        <div class="form-group">
+                            <label>Validade da Receita (meses)</label>
+                            <input type="number" id="consulta-validade" min="1" max="24" value="12">
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 15px 0 10px 0; color: var(--primary-color);">Olho Direito (OD)</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Esférico</label>
+                            <input type="text" id="consulta-od-esferico" placeholder="Ex: -2.50">
+                        </div>
+                        <div class="form-group">
+                            <label>Cilíndrico</label>
+                            <input type="text" id="consulta-od-cilindrico" placeholder="Ex: -0.75">
+                        </div>
+                        <div class="form-group">
+                            <label>Eixo</label>
+                            <input type="number" id="consulta-od-eixo" min="0" max="180" placeholder="0-180">
+                        </div>
+                        <div class="form-group">
+                            <label>ADP</label>
+                            <input type="text" id="consulta-od-adp" placeholder="Ex: 62">
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 15px 0 10px 0; color: var(--primary-color);">Olho Esquerdo (OE)</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Esférico</label>
+                            <input type="text" id="consulta-oe-esferico" placeholder="Ex: -2.25">
+                        </div>
+                        <div class="form-group">
+                            <label>Cilíndrico</label>
+                            <input type="text" id="consulta-oe-cilindrico" placeholder="Ex: -1.00">
+                        </div>
+                        <div class="form-group">
+                            <label>Eixo</label>
+                            <input type="number" id="consulta-oe-eixo" min="0" max="180" placeholder="0-180">
+                        </div>
+                        <div class="form-group">
+                            <label>ADP</label>
+                            <input type="text" id="consulta-oe-adp" placeholder="Ex: 62">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Observações / Prescrições</label>
+                        <textarea id="consulta-obs" rows="3" placeholder="Observações adicionais, tipo de lente recomendada, etc."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarConsulta()">Salvar Consulta</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORNECEDOR -->
+    <div class="modal" id="modal-fornecedor">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Cadastro de Fornecedor</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-fornecedor">
+                    <input type="hidden" id="forn-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome/Razão Social *</label>
+                            <input type="text" id="forn-nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CNPJ</label>
+                            <input type="text" id="forn-cnpj" placeholder="00.000.000/0000-00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Contato</label>
+                            <input type="text" id="forn-contato" placeholder="Nome do responsável">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone *</label>
+                            <input type="text" id="forn-telefone" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="forn-email">
+                        </div>
+                        <div class="form-group">
+                            <label>Site</label>
+                            <input type="text" id="forn-site" placeholder="www.exemplo.com.br">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Endereço</label>
+                        <input type="text" id="forn-endereco" placeholder="Endereço completo">
+                    </div>
+                    <div class="form-group">
+                        <label>Produtos Fornecidos</label>
+                        <textarea id="forn-produtos" rows="2" placeholder="Tipos de produtos que fornece"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea id="forn-obs" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarFornecedor()">Salvar Fornecedor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VENDEDOR -->
+    <div class="modal" id="modal-vendedor">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Cadastro de Vendedor</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-vendedor">
+                    <input type="hidden" id="vend-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome Completo *</label>
+                            <input type="text" id="vend-nome" required>
+                        </div>
+                        <div class="form-group">
+                            <label>CPF</label>
+                            <input type="text" id="vend-cpf" placeholder="000.000.000-00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Telefone</label>
+                            <input type="text" id="vend-telefone">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="vend-email">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Comissão (%) *</label>
+                            <input type="number" id="vend-comissao" min="0" max="100" step="0.5" value="5" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="vend-status">
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Observações</label>
+                        <textarea id="vend-obs" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="salvarVendedor()">Salvar Vendedor</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL COMPRA -->
+    <div class="modal" id="modal-compra">
+        <div class="modal-content">
+            <div class="modal-header"><h3>Nova Compra / Entrada de Estoque</h3><button class="modal-close">&times;</button></div>
+            <div class="modal-body">
+                <form id="form-compra">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fornecedor *</label>
+                            <select id="compra-fornecedor" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Data da Compra</label>
+                            <input type="date" id="compra-data">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Número Nota Fiscal</label>
+                            <input type="text" id="compra-nota">
+                        </div>
+                        <div class="form-group">
+                            <label>Valor Total</label>
+                            <input type="number" step="0.01" id="compra-valor">
+                        </div>
+                    </div>
+                    
+                    <h4 style="margin: 15px 0 10px 0; color: var(--primary-color);">Itens da Compra</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Produto</label>
+                            <select id="compra-produto"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantidade</label>
+                            <input type="number" id="compra-qtd" min="1" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Preço Unitário (R$)</label>
+                            <input type="number" step="0.01" id="compra-preco-unit">
+                        </div>
+                        <div class="form-group">
+                            <label style="visibility: hidden;">Adicionar</label>
+                            <button type="button" class="btn btn-primary" onclick="adicionarItemCompra()"><i class="fas fa-plus"></i> Add</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Qtd</th>
+                                    <th>Unit.</th>
+                                    <th>Total</th>
+                                    <th>X</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compra-itens"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: right; font-weight: bold;">
+                        Total da Compra: R$ <span id="compra-total">0,00</span>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>Observações</label>
+                        <textarea id="compra-obs" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-success" onclick="finalizarCompra()">Finalizar Compra</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AREA DE IMPRESSÃO -->
+    <div id="printable-area"></div>
+
+    <script>
+        // --- CONFIGURAÇÃO DB ---
+        const DB_NAME = 'OticaVision_V4_Full';
+        const DB_VERSION = 4;
+        let db;
+        let config = { 
+            nome: 'Ótica VisionPlus Premium', 
+            tel: '', 
+            end: '', 
+            msg: '', 
+            logo: '',
+            comissao: 5,
+            impressora: 'termica',
+            copias: 1,
+            textoExtra: ''
+        };
+        
+        let carrinho = [];
+        let carrinhoCompra = [];
+        let clientesCache = [];
+        let produtosCache = [];
+        let vendedoresCache = [];
+        let fornecedoresCache = [];
+        let osCache = [];
+        let consultasCache = [];
+        let usuarioAtual = 'Admin';
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = function() {
+            console.log('Página carregada, iniciando sistema...');
+            initDB();
+        };
+
+        function initDB() {
+            console.log('Inicializando banco de dados...');
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            
+            request.onupgradeneeded = function(e) {
+                console.log('Atualizando banco de dados...');
+                db = e.target.result;
+                
+                // Criar object stores
+                const objectStores = [
+                    'produtos', 'clientes', 'vendas', 'orcamentos', 'config',
+                    'fornecedores', 'vendedores', 'ordens_servico', 'consultas',
+                    'compras', 'comissoes', 'backup_log'
+                ];
+                
+                objectStores.forEach(storeName => {
+                    if (!db.objectStoreNames.contains(storeName)) {
+                        db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+                        console.log('Object store criada:', storeName);
+                    }
+                });
+            };
+
+            request.onsuccess = function(e) {
+                console.log('Banco de dados aberto com sucesso!');
+                db = e.target.result;
+                
+                // Configurar eventos primeiro
+                setupEvents();
+                
+                // Carregar dados
+                loadConfig();
+                carregarDadosIniciais();
+                
+                // Verificar autenticação
+                checkAuth();
+            };
+            
+            request.onerror = function(e) {
+                console.error('Erro ao abrir banco de dados:', e.target.error);
+                alert('Erro ao inicializar banco de dados. Recarregue a página.');
+            };
+        }
+        
+        function carregarDadosIniciais() {
+            console.log('Carregando dados iniciais...');
+            // Carregar caches
+            const stores = [
+                {name: 'clientes', cacheVar: 'clientesCache'},
+                {name: 'produtos', cacheVar: 'produtosCache'},
+                {name: 'vendedores', cacheVar: 'vendedoresCache'},
+                {name: 'fornecedores', cacheVar: 'fornecedoresCache'},
+                {name: 'ordens_servico', cacheVar: 'osCache'},
+                {name: 'consultas', cacheVar: 'consultasCache'}
+            ];
+            
+            stores.forEach(store => {
+                const tx = db.transaction(store.name, 'readonly');
+                const objectStore = tx.objectStore(store.name);
+                const request = objectStore.getAll();
+                
+                request.onsuccess = function(e) {
+                    window[store.cacheVar] = e.target.result;
+                    console.log(`${store.name} carregados:`, e.target.result.length);
+                };
+                
+                request.onerror = function(e) {
+                    console.error(`Erro ao carregar ${store.name}:`, e.target.error);
+                };
+            });
+        }
+
+        // --- AUTENTICAÇÃO ---
+        function checkAuth() {
+            console.log('Verificando autenticação...');
+            const user = sessionStorage.getItem('user');
+            console.log('Usuário na sessionStorage:', user);
+            
+            if (user) {
+                console.log('Usuário autenticado:', user);
+                usuarioAtual = user;
+                mostrarSistema();
+            } else {
+                console.log('Nenhum usuário autenticado, mostrando tela de login');
+                mostrarLogin();
+            }
+        }
+
+        function mostrarLogin() {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('app-container').style.display = 'none';
+            console.log('Tela de login exibida');
+        }
+
+        function mostrarSistema() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            document.getElementById('user-display').innerHTML = `<i class="fas fa-user"></i> ${usuarioAtual}`;
+            console.log('Sistema exibido para usuário:', usuarioAtual);
+            
+            // Atualizar dashboard após login
+            setTimeout(() => {
+                updateDashboard();
+                carregarVendedoresSelect();
+                carregarFornecedoresSelect();
+            }, 500);
+        }
+
+        function fazerLogin(u, p) {
+            console.log('Tentando login com:', u, p);
+            
+            // Login simples - em produção usar hash
+            if (u === 'admin' && p === 'admin') {
+                console.log('Login bem sucedido!');
+                sessionStorage.setItem('user', 'Admin');
+                usuarioAtual = 'Admin';
+                mostrarSistema();
+                return true;
+            } else {
+                console.log('Login falhou!');
+                mostrarErroLogin();
+                return false;
+            }
+        }
+
+        function mostrarErroLogin() {
+            const errorElement = document.getElementById('login-error');
+            if (errorElement) {
+                errorElement.style.display = 'block';
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // --- NAVEGAÇÃO ---
+        function navTo(pageId) {
+            console.log('Navegando para:', pageId);
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            const pageElement = document.getElementById(pageId + '-page');
+            if (pageElement) {
+                pageElement.classList.add('active');
+            }
+            
+            const navLink = document.querySelector(`[data-page="${pageId}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+            }
+            
+            // Carregar dados específicos da página
+            switch(pageId) {
+                case 'produtos': listarProdutos(); break;
+                case 'clientes': listarClientes(); break;
+                case 'vendas': listarVendas(); break;
+                case 'orcamentos': listarOrcamentos(); break;
+                case 'ordens-servico': listarOS(); break;
+                case 'consultas': listarConsultas(); break;
+                case 'fornecedores': listarFornecedores(); break;
+                case 'dashboard': updateDashboard(); break;
+                case 'relatorios': carregarRelatorios(); break;
+                case 'config': carregarConfiguracoes(); break;
+            }
+        }
+
+        // --- FUNÇÕES DE CONFIGURAÇÃO ---
+        function loadConfig() {
+            console.log('Carregando configurações...');
+            const tx = db.transaction('config', 'readonly');
+            const request = tx.objectStore('config').get(1);
+            
+            request.onsuccess = function(e) {
+                if (e.target.result) {
+                    config = e.target.result;
+                    console.log('Configurações carregadas:', config);
+                    applyConfig();
+                } else {
+                    console.log('Nenhuma configuração encontrada, usando padrão');
+                }
+            };
+            
+            request.onerror = function(e) {
+                console.error('Erro ao carregar configurações:', e.target.error);
+            };
+        }
+
+        function applyConfig() {
+            console.log('Aplicando configurações...');
+            document.getElementById('store-name-display').innerText = config.nome || 'Ótica VisionPlus Premium';
+            if (config.logo) {
+                const img = document.getElementById('header-logo');
+                img.src = config.logo;
+                img.style.display = 'block';
+                document.getElementById('conf-logo-preview').src = config.logo;
+                document.getElementById('conf-logo-preview').style.display = 'block';
+            }
+            // Preencher form
+            document.getElementById('conf-nome').value = config.nome;
+            document.getElementById('conf-tel').value = config.tel;
+            document.getElementById('conf-end').value = config.end;
+            document.getElementById('conf-msg').value = config.msg;
+            document.getElementById('conf-comissao').value = config.comissao || 5;
+            document.getElementById('conf-impressora').value = config.impressora || 'termica';
+            document.getElementById('conf-copias').value = config.copias || 1;
+            document.getElementById('conf-texto-extra').value = config.textoExtra || '';
+        }
+
+        function salvarConfig() {
+            console.log('Salvando configurações...');
+            config.nome = document.getElementById('conf-nome').value;
+            config.tel = document.getElementById('conf-tel').value;
+            config.end = document.getElementById('conf-end').value;
+            config.msg = document.getElementById('conf-msg').value;
+            config.comissao = parseFloat(document.getElementById('conf-comissao').value);
+            config.impressora = document.getElementById('conf-impressora').value;
+            config.copias = parseInt(document.getElementById('conf-copias').value);
+            config.textoExtra = document.getElementById('conf-texto-extra').value;
+            config.id = 1;
+
+            const tx = db.transaction('config', 'readwrite');
+            tx.objectStore('config').put(config);
+            
+            tx.oncomplete = function() {
+                alert('Configurações salvas!');
+                applyConfig();
+            };
+            
+            tx.onerror = function(e) {
+                console.error('Erro ao salvar configurações:', e.target.error);
+                alert('Erro ao salvar configurações!');
+            };
+        }
+
+        function abrirConfigTab(tab) {
+            document.querySelectorAll('#config-page .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('#config-page .form-container').forEach(f => f.style.display = 'none');
+            
+            const tabElement = document.querySelector(`[onclick="abrirConfigTab('${tab}')"]`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+            
+            const formElement = document.getElementById(`config-${tab}`);
+            if (formElement) {
+                formElement.style.display = 'block';
+            }
+            
+            if(tab === 'vendedores') listarVendedoresConfig();
+            if(tab === 'backup') carregarInfoBackup();
+        }
+
+        // --- IMAGE UPLOAD ---
+        document.getElementById('conf-logo-input').onchange = function() { 
+            readFile(this, (res) => { 
+                config.logo = res; 
+                document.getElementById('conf-logo-preview').src = res; 
+                document.getElementById('conf-logo-preview').style.display = 'block'; 
+            }); 
+        };
+        
+        document.getElementById('prod-img-input').onchange = function() { 
+            readFile(this, (res) => { 
+                document.getElementById('prod-img-preview').src = res; 
+                document.getElementById('prod-img-preview').style.display = 'block'; 
+            }); 
+        };
+
+        function readFile(input, callback) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => callback(e.target.result);
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // --- PRODUTOS ---
+        function openProdutoModal() {
+            document.getElementById('form-produto').reset();
+            document.getElementById('prod-id').value = '';
+            document.getElementById('prod-img-preview').style.display = 'none';
+            document.getElementById('barcode-preview').innerHTML = '';
+            
+            // Carregar fornecedores no select
+            const select = document.getElementById('prod-fornecedor');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            fornecedoresCache.forEach(f => {
+                select.innerHTML += `<option value="${f.id}">${f.nome}</option>`;
+            });
+            
+            document.getElementById('modal-produto').classList.add('active');
+        }
+
+        function gerarCodigoBarras() {
+            const code = Math.floor(Math.random() * 9000000000000) + 1000000000000;
+            document.getElementById('prod-cod').value = code;
+            JsBarcode("#barcode-preview", code.toString(), { height: 40 });
+        }
+
+        document.getElementById('prod-cod').addEventListener('keyup', function() {
+             if(this.value.length > 0) JsBarcode("#barcode-preview", this.value, { height: 40 });
+        });
+
+        function calcularMargem() {
+            const custo = parseFloat(document.getElementById('prod-custo').value) || 0;
+            const venda = parseFloat(document.getElementById('prod-preco').value) || 0;
+            
+            if(custo > 0 && venda > 0) {
+                const margem = ((venda - custo) / custo * 100).toFixed(2);
+                document.getElementById('prod-margem').value = margem + '%';
+            }
+        }
+
+        function salvarProduto() {
+            const data = {
+                nome: document.getElementById('prod-nome').value,
+                cod: document.getElementById('prod-cod').value,
+                cat: document.getElementById('prod-cat').value,
+                fornecedorId: document.getElementById('prod-fornecedor').value ? parseInt(document.getElementById('prod-fornecedor').value) : null,
+                custo: parseFloat(document.getElementById('prod-custo').value) || 0,
+                preco: parseFloat(document.getElementById('prod-preco').value),
+                qtd: parseInt(document.getElementById('prod-qtd').value),
+                min: parseInt(document.getElementById('prod-min').value) || 3,
+                max: parseInt(document.getElementById('prod-max').value) || 50,
+                caracteristicas: document.getElementById('prod-caracteristicas').value,
+                foto: document.getElementById('prod-img-preview').src
+            };
+            
+            const id = document.getElementById('prod-id').value;
+            if(id) data.id = parseInt(id);
+
+            const tx = db.transaction('produtos', 'readwrite');
+            tx.objectStore('produtos').put(data);
+            
+            tx.oncomplete = function() {
+                document.getElementById('modal-produto').classList.remove('active');
+                listarProdutos();
+                updateDashboard();
+                produtosCache = [...produtosCache.filter(p => p.id !== data.id), data];
+            };
+            
+            tx.onerror = function(e) {
+                console.error('Erro ao salvar produto:', e.target.error);
+                alert('Erro ao salvar produto!');
+            };
+        }
+
+        function listarProdutos() {
+            const tbody = document.getElementById('produtos-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('produtos').objectStore('produtos').getAll().onsuccess = function(e) {
+                produtosCache = e.target.result;
+                filterProdutos();
+            };
+        }
+
+        function filterProdutos() {
+            const term = document.getElementById('search-produto').value.toLowerCase();
+            const categoria = document.getElementById('filter-categoria').value;
+            const estoque = document.getElementById('filter-estoque').value;
+            
+            const tbody = document.getElementById('produtos-list');
+            tbody.innerHTML = '';
+            
+            let produtosFiltrados = produtosCache;
+            
+            // Filtro por termo
+            if(term) {
+                produtosFiltrados = produtosFiltrados.filter(p => 
+                    p.nome.toLowerCase().includes(term) || 
+                    (p.cod && p.cod.includes(term)) ||
+                    (p.caracteristicas && p.caracteristicas.toLowerCase().includes(term))
+                );
+            }
+            
+            // Filtro por categoria
+            if(categoria) {
+                produtosFiltrados = produtosFiltrados.filter(p => p.cat === categoria);
+            }
+            
+            // Filtro por estoque
+            if(estoque === 'baixo') {
+                produtosFiltrados = produtosFiltrados.filter(p => p.qtd <= p.min && p.qtd > 0);
+            } else if(estoque === 'critico') {
+                produtosFiltrados = produtosFiltrados.filter(p => p.qtd === 0);
+            }
+            
+            produtosFiltrados.forEach(p => {
+                const fornecedor = p.fornecedorId ? fornecedoresCache.find(f => f.id === p.fornecedorId) : null;
+                const margem = p.custo > 0 ? ((p.preco - p.custo) / p.custo * 100).toFixed(1) : 0;
+                const img = p.foto && p.foto.length > 50 ? `<img src="${p.foto}" class="prod-thumb">` : '<i class="fas fa-image" style="color:#ccc"></i>';
+                
+                tbody.innerHTML += `<tr>
+                    <td>${img}</td>
+                    <td>${p.cod || '-'}</td>
+                    <td><strong>${p.nome}</strong><br><small>${p.caracteristicas || ''}</small></td>
+                    <td>${p.cat}</td>
+                    <td>${fornecedor ? fornecedor.nome : '-'}</td>
+                    <td>
+                        <span style="color: ${p.qtd === 0 ? 'red' : p.qtd <= p.min ? 'orange' : 'green'}">
+                            ${p.qtd}
+                            ${p.qtd <= p.min ? '<i class="fas fa-exclamation-triangle" style="margin-left:5px;color:orange"></i>' : ''}
+                        </span>
+                    </td>
+                    <td>R$ ${p.custo.toFixed(2)}</td>
+                    <td>R$ ${p.preco.toFixed(2)}</td>
+                    <td>${margem}%</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editarProduto(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-info" onclick="verHistoricoProduto(${p.id})" title="Histórico"><i class="fas fa-history"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function editarProduto(id) {
+            openProdutoModal();
+            const p = produtosCache.find(x => x.id === id);
+            
+            document.getElementById('prod-id').value = p.id;
+            document.getElementById('prod-nome').value = p.nome;
+            document.getElementById('prod-cod').value = p.cod;
+            document.getElementById('prod-cat').value = p.cat;
+            document.getElementById('prod-fornecedor').value = p.fornecedorId || '';
+            document.getElementById('prod-custo').value = p.custo;
+            document.getElementById('prod-preco').value = p.preco;
+            document.getElementById('prod-qtd').value = p.qtd;
+            document.getElementById('prod-min').value = p.min || 3;
+            document.getElementById('prod-max').value = p.max || 50;
+            document.getElementById('prod-caracteristicas').value = p.caracteristicas || '';
+            
+            if(p.foto && p.foto.length > 50) {
+                document.getElementById('prod-img-preview').src = p.foto;
+                document.getElementById('prod-img-preview').style.display = 'block';
+            }
+            
+            if(p.cod) JsBarcode("#barcode-preview", p.cod, { height: 40 });
+            calcularMargem();
+        }
+
+        function verHistoricoProduto(id) {
+            alert(`Histórico do produto ${id} - Em desenvolvimento`);
+            // Implementar histórico de movimentação
+        }
+
+        // --- COMPRAS E FORNECEDORES ---
+        function openCompraModal() {
+            carrinhoCompra = [];
+            document.getElementById('compra-data').value = new Date().toISOString().split('T')[0];
+            
+            // Carregar fornecedores
+            const select = document.getElementById('compra-fornecedor');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            fornecedoresCache.forEach(f => {
+                select.innerHTML += `<option value="${f.id}">${f.nome}</option>`;
+            });
+            
+            // Carregar produtos
+            const selectProd = document.getElementById('compra-produto');
+            selectProd.innerHTML = '<option value="">Selecione...</option>';
+            produtosCache.forEach(p => {
+                selectProd.innerHTML += `<option value="${p.id}" data-preco="${p.custo}">${p.nome}</option>`;
+            });
+            
+            document.getElementById('compra-produto').onchange = function() {
+                const selected = this.options[this.selectedIndex];
+                const preco = selected.getAttribute('data-preco');
+                if(preco) {
+                    document.getElementById('compra-preco-unit').value = preco;
+                }
+            };
+            
+            document.getElementById('modal-compra').classList.add('active');
+            atualizarCarrinhoCompra();
+        }
+
+        function adicionarItemCompra() {
+            const produtoId = document.getElementById('compra-produto').value;
+            const qtd = parseInt(document.getElementById('compra-qtd').value) || 1;
+            const precoUnit = parseFloat(document.getElementById('compra-preco-unit').value) || 0;
+            
+            if(!produtoId) {
+                alert('Selecione um produto!');
+                return;
+            }
+            
+            const produto = produtosCache.find(p => p.id === parseInt(produtoId));
+            if(!produto) return;
+            
+            const itemExistente = carrinhoCompra.find(item => item.id === produto.id);
+            if(itemExistente) {
+                itemExistente.qtd += qtd;
+                itemExistente.total = itemExistente.qtd * itemExistente.precoUnit;
+            } else {
+                carrinhoCompra.push({
+                    id: produto.id,
+                    nome: produto.nome,
+                    qtd: qtd,
+                    precoUnit: precoUnit,
+                    total: qtd * precoUnit
+                });
+            }
+            
+            atualizarCarrinhoCompra();
+            
+            // Reset campos
+            document.getElementById('compra-qtd').value = 1;
+            document.getElementById('compra-preco-unit').value = '';
+        }
+
+        function atualizarCarrinhoCompra() {
+            const tbody = document.getElementById('compra-itens');
+            tbody.innerHTML = '';
+            
+            let total = 0;
+            carrinhoCompra.forEach((item, index) => {
+                total += item.total;
+                tbody.innerHTML += `<tr>
+                    <td>${item.nome}</td>
+                    <td>${item.qtd}</td>
+                    <td>R$ ${item.precoUnit.toFixed(2)}</td>
+                    <td>R$ ${item.total.toFixed(2)}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="carrinhoCompra.splice(${index},1); atualizarCarrinhoCompra()">X</button></td>
+                </tr>`;
+            });
+            
+            document.getElementById('compra-total').textContent = total.toFixed(2);
+            document.getElementById('compra-valor').value = total;
+        }
+
+        function finalizarCompra() {
+            if(carrinhoCompra.length === 0) {
+                alert('Adicione itens à compra!');
+                return;
+            }
+            
+            const fornecedorId = document.getElementById('compra-fornecedor').value;
+            if(!fornecedorId) {
+                alert('Selecione um fornecedor!');
+                return;
+            }
+            
+            const compraData = {
+                fornecedorId: parseInt(fornecedorId),
+                data: document.getElementById('compra-data').value,
+                nota: document.getElementById('compra-nota').value,
+                valor: parseFloat(document.getElementById('compra-valor').value),
+                itens: carrinhoCompra,
+                obs: document.getElementById('compra-obs').value,
+                timestamp: new Date().getTime()
+            };
+            
+            // Atualizar estoque dos produtos
+            const txProd = db.transaction('produtos', 'readwrite');
+            carrinhoCompra.forEach(item => {
+                txProd.objectStore('produtos').get(item.id).onsuccess = function(e) {
+                    const produto = e.target.result;
+                    produto.qtd += item.qtd;
+                    // Atualizar custo se for diferente
+                    if(item.precoUnit > 0) {
+                        produto.custo = item.precoUnit;
+                    }
+                    txProd.objectStore('produtos').put(produto);
+                };
+            });
+            
+            // Salvar compra
+            db.transaction('compras', 'readwrite').objectStore('compras').add(compraData).onsuccess = function() {
+                alert('Compra registrada com sucesso!');
+                document.getElementById('modal-compra').classList.remove('active');
+                listarProdutos();
+                updateDashboard();
+            };
+        }
+
+        function openFornecedorModal() {
+            document.getElementById('form-fornecedor').reset();
+            document.getElementById('forn-id').value = '';
+            document.getElementById('modal-fornecedor').classList.add('active');
+        }
+
+        function salvarFornecedor() {
+            const data = {
+                nome: document.getElementById('forn-nome').value,
+                cnpj: document.getElementById('forn-cnpj').value,
+                contato: document.getElementById('forn-contato').value,
+                telefone: document.getElementById('forn-telefone').value,
+                email: document.getElementById('forn-email').value,
+                site: document.getElementById('forn-site').value,
+                endereco: document.getElementById('forn-endereco').value,
+                produtos: document.getElementById('forn-produtos').value,
+                obs: document.getElementById('forn-obs').value
+            };
+            
+            const id = document.getElementById('forn-id').value;
+            if(id) data.id = parseInt(id);
+
+            db.transaction('fornecedores', 'readwrite').objectStore('fornecedores').put(data).onsuccess = function() {
+                document.getElementById('modal-fornecedor').classList.remove('active');
+                listarFornecedores();
+                fornecedoresCache = [...fornecedoresCache.filter(f => f.id !== data.id), data];
+                carregarFornecedoresSelect();
+            };
+        }
+
+        function listarFornecedores() {
+            const tbody = document.getElementById('fornecedores-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('fornecedores').objectStore('fornecedores').getAll().onsuccess = function(e) {
+                fornecedoresCache = e.target.result;
+                fornecedoresCache.forEach(f => {
+                    // Contar produtos deste fornecedor
+                    const produtosFornecedor = produtosCache.filter(p => p.fornecedorId === f.id).length;
+                    
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${f.nome}</strong></td>
+                        <td>${f.cnpj || '-'}</td>
+                        <td>${f.contato || '-'}</td>
+                        <td>${f.telefone}</td>
+                        <td>${produtosFornecedor} produtos</td>
+                        <td>-</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editarFornecedor(${f.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-info" onclick="verComprasFornecedor(${f.id})"><i class="fas fa-history"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            };
+        }
+
+        function editarFornecedor(id) {
+            openFornecedorModal();
+            const f = fornecedoresCache.find(x => x.id === id);
+            
+            document.getElementById('forn-id').value = f.id;
+            document.getElementById('forn-nome').value = f.nome;
+            document.getElementById('forn-cnpj').value = f.cnpj || '';
+            document.getElementById('forn-contato').value = f.contato || '';
+            document.getElementById('forn-telefone').value = f.telefone;
+            document.getElementById('forn-email').value = f.email || '';
+            document.getElementById('forn-site').value = f.site || '';
+            document.getElementById('forn-endereco').value = f.endereco || '';
+            document.getElementById('forn-produtos').value = f.produtos || '';
+            document.getElementById('forn-obs').value = f.obs || '';
+        }
+
+        function carregarFornecedoresSelect() {
+            const selects = ['prod-fornecedor', 'compra-fornecedor'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if(select) {
+                    select.innerHTML = '<option value="">Selecione...</option>';
+                    fornecedoresCache.forEach(f => {
+                        select.innerHTML += `<option value="${f.id}">${f.nome}</option>`;
+                    });
+                }
+            });
+        }
+
+        // --- CLIENTES ---
+        function salvarCliente() {
+            const data = {
+                nome: document.getElementById('cli-nome').value,
+                cpf: document.getElementById('cli-cpf').value,
+                tel: document.getElementById('cli-tel').value,
+                email: document.getElementById('cli-email').value,
+                nasc: document.getElementById('cli-nasc').value,
+                genero: document.getElementById('cli-genero').value,
+                endereco: document.getElementById('cli-endereco').value,
+                obs: document.getElementById('cli-obs').value,
+                dataCadastro: new Date().toISOString().split('T')[0]
+            };
+            
+            const id = document.getElementById('cli-id').value;
+            if(id) data.id = parseInt(id);
+
+            db.transaction('clientes', 'readwrite').objectStore('clientes').put(data).onsuccess = function() {
+                document.getElementById('modal-cliente').classList.remove('active');
+                listarClientes();
+                clientesCache = [...clientesCache.filter(c => c.id !== data.id), data];
+            };
+        }
+
+        function listarClientes() {
+            db.transaction('clientes').objectStore('clientes').getAll().onsuccess = function(e) {
+                clientesCache = e.target.result;
+                filterClientes();
+            };
+        }
+
+        function filterClientes() {
+            const term = document.getElementById('search-cliente').value.toLowerCase();
+            const tbody = document.getElementById('clientes-list');
+            tbody.innerHTML = '';
+            
+            // Buscar histórico de compras para cada cliente
+            db.transaction('vendas').objectStore('vendas').getAll().onsuccess = function(e) {
+                const vendas = e.target.result;
+                
+                clientesCache.filter(c => 
+                    c.nome.toLowerCase().includes(term) || 
+                    (c.cpf && c.cpf.includes(term)) ||
+                    (c.tel && c.tel.includes(term))
+                ).forEach(c => {
+                    // Calcular total gasto pelo cliente
+                    const comprasCliente = vendas.filter(v => v.clienteId === c.id);
+                    const totalGasto = comprasCliente.reduce((acc, v) => acc + v.total, 0);
+                    const ultimaCompra = comprasCliente.length > 0 ? 
+                        new Date(Math.max(...comprasCliente.map(v => v.timestamp))).toLocaleDateString() : 
+                        'Nunca';
+                    
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${c.nome}</strong><br><small>${c.email || ''}</small></td>
+                        <td>${c.cpf || '-'}</td>
+                        <td>${c.tel}</td>
+                        <td>${c.nasc ? new Date(c.nasc).toLocaleDateString() : '-'}</td>
+                        <td>${ultimaCompra}</td>
+                        <td>R$ ${totalGasto.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editarCliente(${c.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-info" onclick="verHistoricoCliente(${c.id})"><i class="fas fa-history"></i></button>
+                            <button class="btn btn-sm btn-success" onclick="enviarMensagemCliente('${c.tel}', '${c.nome}')"><i class="fab fa-whatsapp"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            };
+        }
+
+        function openClienteModal() {
+            document.getElementById('form-cliente').reset();
+            document.getElementById('cli-id').value = '';
+            document.getElementById('cli-nasc').value = '';
+            document.getElementById('modal-cliente').classList.add('active');
+        }
+
+        function editarCliente(id) {
+            const c = clientesCache.find(x => x.id === id);
+            openClienteModal();
+            
+            document.getElementById('cli-id').value = c.id;
+            document.getElementById('cli-nome').value = c.nome;
+            document.getElementById('cli-cpf').value = c.cpf || '';
+            document.getElementById('cli-tel').value = c.tel;
+            document.getElementById('cli-email').value = c.email || '';
+            document.getElementById('cli-nasc').value = c.nasc || '';
+            document.getElementById('cli-genero').value = c.genero || '';
+            document.getElementById('cli-endereco').value = c.endereco || '';
+            document.getElementById('cli-obs').value = c.obs || '';
+        }
+
+        function verHistoricoCliente(id) {
+            const cliente = clientesCache.find(c => c.id === id);
+            if(!cliente) return;
+            
+            db.transaction('vendas').objectStore('vendas').getAll().onsuccess = function(e) {
+                const vendasCliente = e.target.result.filter(v => v.clienteId === id);
+                
+                let historico = `<h3>Histórico de ${cliente.nome}</h3>`;
+                historico += `<p>Total de compras: ${vendasCliente.length}</p>`;
+                historico += `<p>Valor total gasto: R$ ${vendasCliente.reduce((acc, v) => acc + v.total, 0).toFixed(2)}</p>`;
+                
+                if(vendasCliente.length > 0) {
+                    historico += `<table class="table-striped"><thead><tr><th>Data</th><th>Valor</th><th>Itens</th></tr></thead><tbody>`;
+                    vendasCliente.forEach(v => {
+                        historico += `<tr>
+                            <td>${new Date(v.timestamp).toLocaleDateString()}</td>
+                            <td>R$ ${v.total.toFixed(2)}</td>
+                            <td>${v.itens.map(i => i.nome).join(', ')}</td>
+                        </tr>`;
+                    });
+                    historico += `</tbody></table>`;
+                }
+                
+                alertModal('Histórico do Cliente', historico);
+            };
+        }
+
+        function exportarClientes() {
+            const dados = clientesCache.map(c => ({
+                Nome: c.nome,
+                CPF: c.cpf || '',
+                Telefone: c.tel,
+                Email: c.email || '',
+                Nascimento: c.nasc || '',
+                Endereço: c.endereco || '',
+                'Data Cadastro': c.dataCadastro || ''
+            }));
+            
+            exportarParaCSV(dados, 'clientes');
+        }
+
+        // --- VENDAS & PDV ---
+        function openVendaModal(orcamento = false) {
+            carrinho = [];
+            document.getElementById('venda-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('venda-titulo').innerText = orcamento ? 'Novo Orçamento' : 'Nova Venda';
+            
+            // Toggle botões
+            document.getElementById('btn-orcamento').style.display = 'inline-block';
+            document.getElementById('btn-finalizar').style.display = orcamento ? 'none' : 'inline-block';
+            document.getElementById('area-pagamento').style.display = orcamento ? 'none' : 'block';
+
+            // Carrega Clientes no Select
+            const sel = document.getElementById('venda-cliente');
+            sel.innerHTML = '<option value="">Cliente Balcão</option>';
+            clientesCache.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.nome}</option>`);
+
+            // Carrega Vendedores
+            const selVendedor = document.getElementById('venda-vendedor');
+            selVendedor.innerHTML = '<option value="">Selecione vendedor</option>';
+            vendedoresCache.filter(v => v.status === 'ativo').forEach(v => {
+                selVendedor.innerHTML += `<option value="${v.id}">${v.nome} (${v.comissao}%)</option>`;
+            });
+
+            // Reset Pagamentos
+            document.getElementById('venda-pagamentos').innerHTML = '';
+            addPagamentoRow();
+
+            document.getElementById('modal-venda').classList.add('active');
+            renderCarrinho();
+            
+            // Foco no input do leitor
+            setTimeout(() => {
+                const searchInput = document.getElementById('venda-search');
+                if (searchInput) searchInput.focus();
+            }, 500);
+        }
+
+        function addAoCarrinho(prod, qtd) {
+            const existe = carrinho.find(i => i.id === prod.id);
+            if(existe) {
+                existe.qtd += qtd;
+            } else {
+                carrinho.push({ 
+                    id: prod.id, 
+                    nome: prod.nome, 
+                    preco: prod.preco, 
+                    qtd: qtd,
+                    desconto: 0
+                });
+            }
+            renderCarrinho();
+        }
+
+        function aplicarDescontoPercentual() {
+            const percentual = parseFloat(document.getElementById('venda-desc-perc').value) || 0;
+            if(percentual > 0) {
+                const subtotal = carrinho.reduce((acc, item) => acc + (item.preco * item.qtd), 0);
+                const desconto = subtotal * (percentual / 100);
+                document.getElementById('venda-desc').value = desconto.toFixed(2);
+                renderCarrinho();
+            }
+        }
+
+        function renderCarrinho() {
+            const tbody = document.getElementById('venda-itens');
+            tbody.innerHTML = '';
+            let subtotal = 0;
+            
+            carrinho.forEach((item, idx) => {
+                const itemSubtotal = item.preco * item.qtd;
+                const itemDesconto = item.desconto || 0;
+                const itemTotal = itemSubtotal - itemDesconto;
+                subtotal += itemTotal;
+                
+                tbody.innerHTML += `<tr>
+                    <td>${item.nome}</td>
+                    <td>
+                        <input type="number" value="${item.qtd}" min="1" style="width: 60px;" 
+                               onchange="atualizarQtdItem(${idx}, this.value)">
+                    </td>
+                    <td>R$ ${item.preco.toFixed(2)}</td>
+                    <td>
+                        <input type="number" value="${itemDesconto.toFixed(2)}" step="0.01" style="width: 80px;" 
+                               onchange="atualizarDescontoItem(${idx}, this.value)">
+                    </td>
+                    <td>R$ ${itemTotal.toFixed(2)}</td>
+                    <td><button class="btn btn-sm btn-danger" onclick="removerItemCarrinho(${idx})">X</button></td>
+                </tr>`;
+            });
+            
+            const desc = parseFloat(document.getElementById('venda-desc').value) || 0;
+            const total = subtotal - desc;
+            
+            document.getElementById('venda-subtotal').innerText = `R$ ${subtotal.toFixed(2)}`;
+            document.getElementById('venda-total').innerText = `R$ ${total.toFixed(2)}`;
+        }
+
+        function atualizarQtdItem(idx, qtd) {
+            carrinho[idx].qtd = parseInt(qtd);
+            renderCarrinho();
+        }
+
+        function atualizarDescontoItem(idx, desconto) {
+            carrinho[idx].desconto = parseFloat(desconto) || 0;
+            renderCarrinho();
+        }
+
+        function removerItemCarrinho(idx) {
+            carrinho.splice(idx, 1);
+            renderCarrinho();
+        }
+
+        function addPagamentoRow() {
+            const div = document.createElement('div');
+            div.className = 'payment-row';
+            div.innerHTML = `
+                <select class="pay-method form-control">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão Crédito">Cartão Crédito</option>
+                    <option value="Cartão Débito">Cartão Débito</option>
+                    <option value="Crediário">Crediário</option>
+                </select>
+                <input type="number" step="0.01" class="pay-value form-control" placeholder="Valor" onchange="calcularTroco()">
+                <button class="btn btn-sm btn-danger" onclick="this.parentElement.remove(); calcularTroco()">X</button>
+            `;
+            document.getElementById('venda-pagamentos').appendChild(div);
+        }
+
+        function finalizarVenda(isOrcamento) {
+            if(carrinho.length === 0) return alert('Carrinho vazio!');
+            
+            const cliId = document.getElementById('venda-cliente').value;
+            const vendedorId = document.getElementById('venda-vendedor').value;
+            const desc = parseFloat(document.getElementById('venda-desc').value) || 0;
+            const totalItens = carrinho.reduce((acc, i) => acc + (i.preco * i.qtd - (i.desconto || 0)), 0);
+            const totalFinal = totalItens - desc;
+
+            const registro = {
+                data: document.getElementById('venda-data').value,
+                clienteId: cliId ? parseInt(cliId) : null,
+                vendedorId: vendedorId ? parseInt(vendedorId) : null,
+                itens: carrinho,
+                desconto: desc,
+                total: totalFinal,
+                timestamp: new Date().getTime()
+            };
+
+            if(!isOrcamento) {
+                // Processar Venda
+                const pags = [];
+                let pago = 0;
+                document.querySelectorAll('.payment-row').forEach(row => {
+                    const val = parseFloat(row.querySelector('.pay-value').value) || 0;
+                    if(val > 0) {
+                        pags.push({ 
+                            metodo: row.querySelector('.pay-method').value, 
+                            valor: val 
+                        });
+                        pago += val;
+                    }
+                });
+
+                if(pags.length === 0) {
+                    alert('Adicione pelo menos uma forma de pagamento!');
+                    return;
+                }
+
+                if(Math.abs(pago - totalFinal) > 0.05) {
+                    if(!confirm(`Total Pago (R$ ${pago.toFixed(2)}) diferente do Total da Venda (R$ ${totalFinal.toFixed(2)}). Confirmar?`)) return;
+                }
+                
+                registro.pagamentos = pags;
+
+                // Baixar Estoque
+                const txProd = db.transaction('produtos', 'readwrite');
+                carrinho.forEach(item => {
+                    txProd.objectStore('produtos').get(item.id).onsuccess = function(e) {
+                        const p = e.target.result;
+                        p.qtd -= item.qtd;
+                        txProd.objectStore('produtos').put(p);
+                    };
+                });
+                
+                // Calcular comissão
+                if(vendedorId) {
+                    const vendedor = vendedoresCache.find(v => v.id === parseInt(vendedorId));
+                    if(vendedor && vendedor.comissao > 0) {
+                        const comissaoValor = totalFinal * (vendedor.comissao / 100);
+                        registro.comissao = comissaoValor;
+                        
+                        // Registrar comissão
+                        const comissaoData = {
+                            vendedorId: parseInt(vendedorId),
+                            vendaId: null, // Será atualizado após salvar a venda
+                            valor: comissaoValor,
+                            data: new Date().toISOString().split('T')[0],
+                            status: 'pendente'
+                        };
+                        
+                        db.transaction('comissoes', 'readwrite').objectStore('comissoes').add(comissaoData);
+                    }
+                }
+                
+                db.transaction('vendas', 'readwrite').objectStore('vendas').add(registro).onsuccess = function(e) {
+                    const vendaId = e.target.result;
+                    
+                    // Atualizar ID da venda na comissão
+                    if(registro.comissao) {
+                        db.transaction('comissoes', 'readwrite').objectStore('comissoes').openCursor().onsuccess = function(ev) {
+                            const cursor = ev.target.result;
+                            if(cursor) {
+                                if(cursor.value.vendaId === null) {
+                                    const updateData = cursor.value;
+                                    updateData.vendaId = vendaId;
+                                    cursor.update(updateData);
+                                }
+                                cursor.continue();
+                            }
+                        };
+                    }
+                    
+                    alert('Venda Realizada com sucesso!');
+                    document.getElementById('modal-venda').classList.remove('active');
+                    updateDashboard();
+                    imprimirComprovante(registro, vendaId);
+                    listarVendas();
+                };
+
+            } else {
+                // Processar Orçamento
+                registro.validade = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 7 dias
+                
+                db.transaction('orcamentos', 'readwrite').objectStore('orcamentos').add(registro).onsuccess = function() {
+                    alert('Orçamento Salvo!');
+                    document.getElementById('modal-venda').classList.remove('active');
+                    listarOrcamentos();
+                    updateDashboard();
+                };
+            }
+        }
+
+        // --- ORDENS DE SERVIÇO ---
+        function openOSModal() {
+            document.getElementById('form-os').reset();
+            document.getElementById('os-id').value = '';
+            document.getElementById('os-data-entrada').value = new Date().toISOString().split('T')[0];
+            
+            // Carregar clientes
+            const select = document.getElementById('os-cliente');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            clientesCache.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+            });
+            
+            // Carregar responsáveis
+            const selectResp = document.getElementById('os-responsavel');
+            selectResp.innerHTML = '<option value="">Selecione...</option>';
+            vendedoresCache.forEach(v => {
+                selectResp.innerHTML += `<option value="${v.id}">${v.nome}</option>`;
+            });
+            
+            document.getElementById('modal-os').classList.add('active');
+        }
+
+        function salvarOS() {
+            const data = {
+                clienteId: parseInt(document.getElementById('os-cliente').value),
+                dataEntrada: document.getElementById('os-data-entrada').value,
+                dataEntrega: document.getElementById('os-data-entrega').value,
+                responsavelId: document.getElementById('os-responsavel').value ? parseInt(document.getElementById('os-responsavel').value) : null,
+                tipo: document.getElementById('os-tipo').value,
+                status: document.getElementById('os-status').value,
+                descricao: document.getElementById('os-descricao').value,
+                valor: parseFloat(document.getElementById('os-valor').value) || 0,
+                sinal: parseFloat(document.getElementById('os-sinal').value) || 0,
+                obs: document.getElementById('os-obs').value,
+                timestamp: new Date().getTime()
+            };
+            
+            const id = document.getElementById('os-id').value;
+            if(id) data.id = parseInt(id);
+
+            db.transaction('ordens_servico', 'readwrite').objectStore('ordens_servico').put(data).onsuccess = function() {
+                document.getElementById('modal-os').classList.remove('active');
+                listarOS();
+                updateDashboard();
+                osCache = [...osCache.filter(o => o.id !== data.id), data];
+            };
+        }
+
+        function listarOS() {
+            const tbody = document.getElementById('os-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('ordens_servico').objectStore('ordens_servico').getAll().onsuccess = function(e) {
+                osCache = e.target.result;
+                filtrarOS('pendente');
+            };
+        }
+
+        function filtrarOS(status) {
+            const tbody = document.getElementById('os-list');
+            tbody.innerHTML = '';
+            
+            // Atualizar tabs ativas
+            document.querySelectorAll('#ordens-servico-page .tab').forEach(tab => tab.classList.remove('active'));
+            const tabElement = document.querySelector(`[onclick="filtrarOS('${status}')"]`);
+            if (tabElement) {
+                tabElement.classList.add('active');
+            }
+            
+            let osFiltradas = osCache;
+            
+            if(status !== 'todos') {
+                osFiltradas = osCache.filter(o => o.status === status);
+            }
+            
+            osFiltradas.forEach(o => {
+                const cliente = clientesCache.find(c => c.id === o.clienteId);
+                const responsavel = o.responsavelId ? vendedoresCache.find(v => v.id === o.responsavelId) : null;
+                
+                tbody.innerHTML += `<tr>
+                    <td><strong>#${o.id}</strong></td>
+                    <td>${cliente ? cliente.nome : 'Cliente não encontrado'}</td>
+                    <td>${new Date(o.dataEntrada).toLocaleDateString()}</td>
+                    <td style="color: ${new Date(o.dataEntrega) < new Date() ? 'red' : 'inherit'}">
+                        ${new Date(o.dataEntrega).toLocaleDateString()}
+                    </td>
+                    <td>${o.tipo}</td>
+                    <td>R$ ${o.valor.toFixed(2)}</td>
+                    <td><span class="status status-${o.status}">${o.status}</span></td>
+                    <td>${responsavel ? responsavel.nome : '-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editarOS(${o.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-success" onclick="alterarStatusOS(${o.id}, 'concluido')" title="Concluir"><i class="fas fa-check"></i></button>
+                        <button class="btn btn-sm btn-warning" onclick="imprimirOS(${o.id})" title="Imprimir"><i class="fas fa-print"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function editarOS(id) {
+            openOSModal();
+            const o = osCache.find(x => x.id === id);
+            
+            document.getElementById('os-id').value = o.id;
+            document.getElementById('os-cliente').value = o.clienteId;
+            document.getElementById('os-data-entrada').value = o.dataEntrada;
+            document.getElementById('os-data-entrega').value = o.dataEntrega;
+            document.getElementById('os-responsavel').value = o.responsavelId || '';
+            document.getElementById('os-tipo').value = o.tipo;
+            document.getElementById('os-status').value = o.status;
+            document.getElementById('os-descricao').value = o.descricao;
+            document.getElementById('os-valor').value = o.valor;
+            document.getElementById('os-sinal').value = o.sinal;
+            document.getElementById('os-obs').value = o.obs || '';
+        }
+
+        function alterarStatusOS(id, status) {
+            const os = osCache.find(o => o.id === id);
+            if(os) {
+                os.status = status;
+                db.transaction('ordens_servico', 'readwrite').objectStore('ordens_servico').put(os).onsuccess = function() {
+                    listarOS();
+                    updateDashboard();
+                    alert(`OS #${id} marcada como ${status}`);
+                };
+            }
+        }
+
+        // --- CONSULTAS E RECEITAS ---
+        function openConsultaModal() {
+            document.getElementById('form-consulta').reset();
+            document.getElementById('consulta-id').value = '';
+            document.getElementById('consulta-data').value = new Date().toISOString().split('T')[0];
+            
+            // Carregar clientes
+            const select = document.getElementById('consulta-cliente');
+            select.innerHTML = '<option value="">Selecione...</option>';
+            clientesCache.forEach(c => {
+                select.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+            });
+            
+            document.getElementById('modal-consulta').classList.add('active');
+        }
+
+        function salvarConsulta() {
+            const data = {
+                clienteId: parseInt(document.getElementById('consulta-cliente').value),
+                data: document.getElementById('consulta-data').value,
+                profissional: document.getElementById('consulta-profissional').value,
+                validade: parseInt(document.getElementById('consulta-validade').value),
+                odEsferico: document.getElementById('consulta-od-esferico').value,
+                odCilindrico: document.getElementById('consulta-od-cilindrico').value,
+                odEixo: document.getElementById('consulta-od-eixo').value,
+                odAdp: document.getElementById('consulta-od-adp').value,
+                oeEsferico: document.getElementById('consulta-oe-esferico').value,
+                oeCilindrico: document.getElementById('consulta-oe-cilindrico').value,
+                oeEixo: document.getElementById('consulta-oe-eixo').value,
+                oeAdp: document.getElementById('consulta-oe-adp').value,
+                obs: document.getElementById('consulta-obs').value,
+                timestamp: new Date().getTime()
+            };
+            
+            const id = document.getElementById('consulta-id').value;
+            if(id) data.id = parseInt(id);
+
+            db.transaction('consultas', 'readwrite').objectStore('consultas').put(data).onsuccess = function() {
+                document.getElementById('modal-consulta').classList.remove('active');
+                listarConsultas();
+                consultasCache = [...consultasCache.filter(c => c.id !== data.id), data];
+            };
+        }
+
+        function listarConsultas() {
+            const tbody = document.getElementById('consultas-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('consultas').objectStore('consultas').getAll().onsuccess = function(e) {
+                consultasCache = e.target.result;
+                filterConsultas();
+            };
+        }
+
+        function filterConsultas() {
+            const term = document.getElementById('search-consulta').value.toLowerCase();
+            const dataFiltro = document.getElementById('filter-consulta-data').value;
+            
+            const tbody = document.getElementById('consultas-list');
+            tbody.innerHTML = '';
+            
+            let consultasFiltradas = consultasCache;
+            
+            if(term) {
+                const clientesFiltrados = clientesCache.filter(c => c.nome.toLowerCase().includes(term));
+                const clientesIds = clientesFiltrados.map(c => c.id);
+                consultasFiltradas = consultasFiltradas.filter(c => clientesIds.includes(c.clienteId));
+            }
+            
+            if(dataFiltro) {
+                consultasFiltradas = consultasFiltradas.filter(c => c.data === dataFiltro);
+            }
+            
+            consultasFiltradas.forEach(c => {
+                const cliente = clientesCache.find(cli => cli.id === c.clienteId);
+                
+                tbody.innerHTML += `<tr>
+                    <td>${new Date(c.data).toLocaleDateString()}</td>
+                    <td><strong>${cliente ? cliente.nome : 'Cliente não encontrado'}</strong></td>
+                    <td>${c.odEsferico || '-'}</td>
+                    <td>${c.odCilindrico || '-'}</td>
+                    <td>${c.oeEsferico || '-'}</td>
+                    <td>${c.oeCilindrico || '-'}</td>
+                    <td>${c.odAdp || '-'}/${c.oeAdp || '-'}</td>
+                    <td>${c.obs || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editarConsulta(${c.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-success" onclick="imprimirReceita(${c.id})"><i class="fas fa-print"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function editarConsulta(id) {
+            openConsultaModal();
+            const c = consultasCache.find(x => x.id === id);
+            
+            document.getElementById('consulta-id').value = c.id;
+            document.getElementById('consulta-cliente').value = c.clienteId;
+            document.getElementById('consulta-data').value = c.data;
+            document.getElementById('consulta-profissional').value = c.profissional || '';
+            document.getElementById('consulta-validade').value = c.validade || 12;
+            document.getElementById('consulta-od-esferico').value = c.odEsferico || '';
+            document.getElementById('consulta-od-cilindrico').value = c.odCilindrico || '';
+            document.getElementById('consulta-od-eixo').value = c.odEixo || '';
+            document.getElementById('consulta-od-adp').value = c.odAdp || '';
+            document.getElementById('consulta-oe-esferico').value = c.oeEsferico || '';
+            document.getElementById('consulta-oe-cilindrico').value = c.oeCilindrico || '';
+            document.getElementById('consulta-oe-eixo').value = c.oeEixo || '';
+            document.getElementById('consulta-oe-adp').value = c.oeAdp || '';
+            document.getElementById('consulta-obs').value = c.obs || '';
+        }
+
+        // --- VENDEDORES ---
+        function carregarVendedoresSelect() {
+            const selects = ['venda-vendedor', 'os-responsavel'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if(select) {
+                    select.innerHTML = '<option value="">Selecione...</option>';
+                    vendedoresCache.forEach(v => {
+                        select.innerHTML += `<option value="${v.id}">${v.nome} (${v.comissao}%)</option>`;
+                    });
+                }
+            });
+        }
+
+        function openVendedorModal() {
+            document.getElementById('form-vendedor').reset();
+            document.getElementById('vend-id').value = '';
+            document.getElementById('modal-vendedor').classList.add('active');
+        }
+
+        function salvarVendedor() {
+            const data = {
+                nome: document.getElementById('vend-nome').value,
+                cpf: document.getElementById('vend-cpf').value,
+                telefone: document.getElementById('vend-telefone').value,
+                email: document.getElementById('vend-email').value,
+                comissao: parseFloat(document.getElementById('vend-comissao').value),
+                status: document.getElementById('vend-status').value,
+                obs: document.getElementById('vend-obs').value
+            };
+            
+            const id = document.getElementById('vend-id').value;
+            if(id) data.id = parseInt(id);
+
+            db.transaction('vendedores', 'readwrite').objectStore('vendedores').put(data).onsuccess = function() {
+                document.getElementById('modal-vendedor').classList.remove('active');
+                listarVendedoresConfig();
+                vendedoresCache = [...vendedoresCache.filter(v => v.id !== data.id), data];
+                carregarVendedoresSelect();
+            };
+        }
+
+        function listarVendedoresConfig() {
+            const container = document.getElementById('vendedores-list');
+            container.innerHTML = '';
+            
+            vendedoresCache.forEach(v => {
+                // Calcular comissões pendentes
+                db.transaction('comissoes').objectStore('comissoes').getAll().onsuccess = function(e) {
+                    const comissoes = e.target.result.filter(c => c.vendedorId === v.id && c.status === 'pendente');
+                    const totalPendente = comissoes.reduce((acc, c) => acc + c.valor, 0);
+                    
+                    container.innerHTML += `
+                        <div class="form-container" style="margin-bottom: 1rem;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <strong>${v.nome}</strong><br>
+                                    <small>CPF: ${v.cpf || 'Não informado'} | Comissão: ${v.comissao}%</small>
+                                </div>
+                                <div class="form-group">
+                                    <small>Status: <span class="status ${v.status === 'ativo' ? 'status-concluido' : 'status-cancelado'}">${v.status}</span></small><br>
+                                    <small>Comissão Pendente: R$ ${totalPendente.toFixed(2)}</small>
+                                </div>
+                                <div class="form-group" style="text-align: right;">
+                                    <button class="btn btn-sm btn-primary" onclick="editarVendedor(${v.id})"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-info" onclick="verComissoesVendedor(${v.id})"><i class="fas fa-money-bill-wave"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                };
+            });
+        }
+
+        function editarVendedor(id) {
+            openVendedorModal();
+            const v = vendedoresCache.find(x => x.id === id);
+            
+            document.getElementById('vend-id').value = v.id;
+            document.getElementById('vend-nome').value = v.nome;
+            document.getElementById('vend-cpf').value = v.cpf || '';
+            document.getElementById('vend-telefone').value = v.telefone || '';
+            document.getElementById('vend-email').value = v.email || '';
+            document.getElementById('vend-comissao').value = v.comissao;
+            document.getElementById('vend-status').value = v.status;
+            document.getElementById('vend-obs').value = v.obs || '';
+        }
+
+        // --- LISTAGENS ---
+        function listarVendas() {
+            const tbody = document.getElementById('vendas-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('vendas').objectStore('vendas').openCursor(null, 'prev').onsuccess = function(e) {
+                const cursor = e.target.result;
+                if(cursor) {
+                    const v = cursor.value;
+                    const clienteNome = getClientName(v.clienteId);
+                    const vendedor = v.vendedorId ? vendedoresCache.find(vend => vend.id === v.vendedorId) : null;
+                    
+                    tbody.innerHTML += `<tr>
+                        <td><strong>#${v.id}</strong></td>
+                        <td>${new Date(v.data).toLocaleDateString()}</td>
+                        <td>${clienteNome}</td>
+                        <td>${vendedor ? vendedor.nome : '-'}</td>
+                        <td>${v.itens.length} itens</td>
+                        <td>R$ ${v.total.toFixed(2)}</td>
+                        <td>R$ ${v.comissao ? v.comissao.toFixed(2) : '0,00'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick='reimprimir(${JSON.stringify(v)}, ${v.id})'><i class="fas fa-print"></i></button>
+                            <button class="btn btn-sm btn-info" onclick="verDetalhesVenda(${v.id})"><i class="fas fa-eye"></i></button>
+                        </td>
+                    </tr>`;
+                    cursor.continue();
+                }
+            };
+        }
+
+        function listarOrcamentos() {
+            const tbody = document.getElementById('orcamentos-list');
+            tbody.innerHTML = '';
+            
+            db.transaction('orcamentos').objectStore('orcamentos').openCursor(null, 'prev').onsuccess = function(e) {
+                const cursor = e.target.result;
+                if(cursor) {
+                    const v = cursor.value;
+                    const cliNome = getClientName(v.clienteId);
+                    
+                    tbody.innerHTML += `<tr>
+                        <td>#${v.id}</td>
+                        <td>${new Date(v.data).toLocaleDateString()}</td>
+                        <td>${cliNome}</td>
+                        <td>R$ ${v.total.toFixed(2)}</td>
+                        <td>${v.validade ? new Date(v.validade).toLocaleDateString() : '7 dias'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="enviarWhatsAppOrcamento(${v.id}, '${cliNome}', ${v.total}, ${v.clienteId})">
+                                <i class="fab fa-whatsapp"></i> Enviar
+                            </button>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="carregarOrcamentoVenda(${v.id})">Abrir</button>
+                            <button class="btn btn-sm btn-danger" onclick="excluirOrcamento(${v.id})">X</button>
+                        </td>
+                    </tr>`;
+                    cursor.continue();
+                }
+            };
+        }
+
+        function carregarOrcamentoVenda(id) {
+            db.transaction('orcamentos').objectStore('orcamentos').get(id).onsuccess = function(e) {
+                const orcamento = e.target.result;
+                if(orcamento) {
+                    openVendaModal(false);
+                    // Carregar dados do orçamento no modal de venda
+                    document.getElementById('venda-cliente').value = orcamento.clienteId || '';
+                    document.getElementById('venda-data').value = orcamento.data;
+                    
+                    // Converter orçamento em carrinho
+                    carrinho = orcamento.itens;
+                    renderCarrinho();
+                    
+                    alert('Orçamento carregado! Converta em venda quando finalizar.');
+                }
+            };
+        }
+
+        function excluirOrcamento(id) {
+            if(confirm('Deseja excluir este orçamento?')) {
+                db.transaction('orcamentos', 'readwrite').objectStore('orcamentos').delete(id).onsuccess = function() {
+                    listarOrcamentos();
+                };
+            }
+        }
+
+        // --- INTEGRAÇÃO WHATSAPP ---
+        function enviarWhatsAppOrcamento(idOrcamento, nomeCliente, valor, clienteId) {
+            if(!clienteId) return alert('Orçamento sem cliente cadastrado para envio.');
+            
+            const cli = clientesCache.find(c => c.id === clienteId);
+            if(!cli || !cli.tel) return alert('Cliente sem telefone cadastrado.');
+            
+            let fone = cli.tel.replace(/\D/g, '');
+            if(fone.length < 12) fone = '55' + fone;
+            
+            const texto = `Olá *${nomeCliente}*! 
+
+Aqui está o seu orçamento da *${config.nome}*.
+
+*Orçamento #${idOrcamento}*
+Valor Total: R$ ${valor.toFixed(2)}
+Validade: ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+
+Qualquer dúvida estamos à disposição!
+${config.tel ? `Telefone: ${config.tel}` : ''}`;
+
+            const url = `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        }
+
+        function enviarMensagemCliente(telefone, nome) {
+            let fone = telefone.replace(/\D/g, '');
+            if(fone.length < 12) fone = '55' + fone;
+            
+            const texto = `Olá *${nome}*! 
+
+A *${config.nome}* agradece sua preferência!
+
+Temos novidades e promoções especiais para você. Venha nos visitar!`;
+            
+            const url = `https://wa.me/${fone}?text=${encodeURIComponent(texto)}`;
+            window.open(url, '_blank');
+        }
+
+        // --- DASHBOARD & ALERTAS ---
+        function updateDashboard() {
+            console.log('Atualizando dashboard...');
+            const hoje = new Date().toISOString().split('T')[0];
+            
+            // Vendas Hoje
+            db.transaction('vendas').objectStore('vendas').getAll().onsuccess = function(e) {
+                const vendasHoje = e.target.result.filter(v => v.data === hoje);
+                const totalHoje = vendasHoje.reduce((acc, v) => acc + v.total, 0);
+                document.getElementById('dash-vendas-hoje').innerText = `R$ ${totalHoje.toFixed(2)}`;
+                
+                // Atualizar gráfico de vendas
+                atualizarGraficoVendas(e.target.result);
+            };
+
+            // OS Hoje
+            db.transaction('ordens_servico').objectStore('ordens_servico').getAll().onsuccess = function(e) {
+                const osHoje = e.target.result.filter(o => o.dataEntrega === hoje && o.status !== 'concluido');
+                document.getElementById('dash-os-hoje').innerText = osHoje.length;
+                
+                // Atualizar lista de OS pendentes
+                const tbody = document.getElementById('dash-os-pendentes');
+                tbody.innerHTML = '';
+                
+                const osPendentes = e.target.result.filter(o => o.status === 'pendente').slice(0, 5);
+                osPendentes.forEach(o => {
+                    const cliente = clientesCache.find(c => c.id === o.clienteId);
+                    tbody.innerHTML += `<tr>
+                        <td><strong>#${o.id}</strong></td>
+                        <td>${cliente ? cliente.nome : 'Cliente não encontrado'}</td>
+                        <td>${new Date(o.dataEntrega).toLocaleDateString()}</td>
+                        <td>${o.tipo}</td>
+                        <td><span class="status status-${o.status}">${o.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editarOS(${o.id})"><i class="fas fa-edit"></i></button>
+                        </td>
+                    </tr>`;
+                });
+            };
+
+            // Estoque Baixo
+            const listaEstoque = document.getElementById('dash-estoque-baixo');
+            listaEstoque.innerHTML = '';
+            
+            db.transaction('produtos').objectStore('produtos').getAll().onsuccess = function(e) {
+                const baixos = e.target.result.filter(p => p.qtd <= p.min);
+                if(baixos.length === 0) {
+                    listaEstoque.innerHTML = '<li>Tudo ok no estoque!</li>';
+                } else {
+                    baixos.forEach(p => {
+                        listaEstoque.innerHTML += `<li>${p.nome} <span class="badge-alert">${p.qtd} un</span></li>`;
+                    });
+                }
+                
+                // Atualizar gráfico de produtos
+                atualizarGraficoProdutos(e.target.result);
+            };
+
+            // Aniversariantes
+            const mesAtual = new Date().getMonth();
+            const listaNiver = document.getElementById('dash-aniversariantes');
+            listaNiver.innerHTML = '';
+            
+            db.transaction('clientes').objectStore('clientes').getAll().onsuccess = function(e) {
+                const aniversariantes = e.target.result.filter(c => {
+                    if(!c.nasc) return false;
+                    const d = new Date(c.nasc);
+                    return d.getMonth() === mesAtual;
+                });
+                
+                if(aniversariantes.length === 0) {
+                    listaNiver.innerHTML = '<li>Nenhum aniversariante este mês.</li>';
+                } else {
+                    aniversariantes.slice(0, 5).forEach(c => {
+                        const dia = new Date(c.nasc).getDate();
+                        listaNiver.innerHTML += `<li>
+                            ${c.nome} - Dia ${dia} 
+                            <button class="btn btn-sm btn-success" style="padding:2px 5px" onclick="enviarWhatsAppParabens('${c.nome}', '${c.tel}')">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                        </li>`;
+                    });
+                }
+            };
+        }
+
+        function atualizarGraficoVendas(vendas) {
+            const ctx = document.getElementById('chart-vendas');
+            if (!ctx) return;
+            
+            const ctx2d = ctx.getContext('2d');
+            
+            // Agrupar vendas dos últimos 7 dias
+            const labels = [];
+            const data = [];
+            
+            for(let i = 6; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateStr = date.toISOString().split('T')[0];
+                
+                labels.push(new Date(dateStr).toLocaleDateString('pt-BR', { weekday: 'short' }));
+                
+                const vendasDia = vendas.filter(v => v.data === dateStr);
+                const totalDia = vendasDia.reduce((acc, v) => acc + v.total, 0);
+                data.push(totalDia);
+            }
+            
+            if(window.vendasChart) {
+                window.vendasChart.destroy();
+            }
+            
+            window.vendasChart = new Chart(ctx2d, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Vendas (R$)',
+                        data: data,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'R$ ' + value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function atualizarGraficoProdutos(produtos) {
+            const ctx = document.getElementById('chart-produtos');
+            if (!ctx) return;
+            
+            const ctx2d = ctx.getContext('2d');
+            
+            // Produtos mais vendidos (simulação - em produção pegar do histórico)
+            const produtosMaisVendidos = produtos
+                .sort((a, b) => b.qtd - a.qtd)
+                .slice(0, 5);
+            
+            const labels = produtosMaisVendidos.map(p => p.nome.substring(0, 15) + '...');
+            const data = produtosMaisVendidos.map(p => p.qtd);
+            
+            if(window.produtosChart) {
+                window.produtosChart.destroy();
+            }
+            
+            window.produtosChart = new Chart(ctx2d, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Estoque',
+                        data: data,
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.7)',
+                            'rgba(46, 204, 113, 0.7)',
+                            'rgba(155, 89, 182, 0.7)',
+                            'rgba(241, 196, 15, 0.7)',
+                            'rgba(230, 126, 34, 0.7)'
+                        ],
+                        borderColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#9b59b6',
+                            '#f1c40f',
+                            '#e67e22'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' un';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function enviarWhatsAppParabens(nome, tel) {
+            let fone = tel.replace(/\D/g, '');
+            if(fone.length < 12) fone = '55' + fone;
+            
+            const msg = `🎉 *Parabéns ${nome}!* 🎉
+
+A *${config.nome}* deseja um feliz aniversário! 
+
+Como presente especial, você ganhou *10% de desconto* em qualquer compra este mês!
+
+Venha nos visitar e aproveite essa oferta exclusiva!
+
+${config.tel ? `Telefone: ${config.tel}` : ''}`;
+            
+            window.open(`https://wa.me/${fone}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // --- IMPRESSÃO ---
+        function reimprimir(venda, id) {
+            imprimirComprovante(venda, id);
+        }
+
+        function imprimirComprovante(venda, id) {
+            const area = document.getElementById('printable-area');
+            const cliNome = getClientName(venda.clienteId);
+            const vendedor = venda.vendedorId ? vendedoresCache.find(v => v.id === venda.vendedorId) : null;
+            
+            let itensHtml = '';
+            venda.itens.forEach(i => {
+                itensHtml += `
+                <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px;">
+                    <span>${i.qtd}x ${i.nome.substring(0, 15)}${i.nome.length > 15 ? '...' : ''}</span>
+                    <span>${((i.preco * i.qtd) - (i.desconto || 0)).toFixed(2)}</span>
+                </div>`;
+            });
+
+            let pagamentosHtml = '';
+            if(venda.pagamentos) {
+                venda.pagamentos.forEach(p => {
+                    pagamentosHtml += `<div>${p.metodo}: R$ ${p.valor.toFixed(2)}</div>`;
+                });
+            }
+
+            const html = `
+                <div style="width: ${config.impressora === 'termica' ? '80mm' : '210mm'}; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px;">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        ${config.logo ? `<img src="${config.logo}" style="max-height: 50px; margin-bottom: 5px;">` : ''}
+                        <h3 style="margin:0">${config.nome}</h3>
+                        <p style="margin:0; font-size:10px">${config.end}</p>
+                        <p style="margin:0; font-size:10px">${config.tel}</p>
+                    </div>
+                    <hr style="border-top: 1px dashed #000; margin: 5px 0;">
+                    <div style="text-align:left; font-size:11px;">
+                        <strong>CUPOM FISCAL</strong><br>
+                        VENDA #${id}<br>
+                        DATA: ${new Date(venda.data).toLocaleDateString()} ${new Date(venda.timestamp || Date.now()).toLocaleTimeString()}<br>
+                        CLIENTE: ${cliNome}<br>
+                        ${vendedor ? `VENDEDOR: ${vendedor.nome}<br>` : ''}
+                    </div>
+                    <hr style="border-top: 1px dashed #000; margin: 5px 0;">
+                    <div style="font-size:11px;">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; margin-bottom:5px;">
+                            <span>ITEM</span>
+                            <span>VALOR</span>
+                        </div>
+                        ${itensHtml}
+                    </div>
+                    <hr style="border-top: 1px dashed #000; margin: 5px 0;">
+                    <div style="text-align:right; font-size:12px;">
+                        <div>SUBTOTAL: R$ ${(venda.total + venda.desconto).toFixed(2)}</div>
+                        <div>DESCONTO: R$ ${venda.desconto.toFixed(2)}</div>
+                        <div style="font-size:14px; font-weight:bold;">TOTAL: R$ ${venda.total.toFixed(2)}</div>
+                    </div>
+                    ${pagamentosHtml ? `<div style="margin-top:10px; font-size:11px;">${pagamentosHtml}</div>` : ''}
+                    ${config.textoExtra ? `<div style="margin-top:10px; font-size:10px; text-align:center;">${config.textoExtra}</div>` : ''}
+                    <hr style="border-top: 1px dashed #000; margin: 10px 0;">
+                    <div style="text-align:center; font-size:10px; margin-top:10px;">
+                        ${config.msg || 'Obrigado pela preferência!'}
+                    </div>
+                </div>
+            `;
+            
+            area.innerHTML = html;
+            
+            // Imprimir múltiplas cópias
+            for(let i = 0; i < (config.copias || 1); i++) {
+                setTimeout(() => {
+                    if(i > 0) area.innerHTML += '<div style="page-break-after: always;"></div>' + html;
+                }, i * 100);
+            }
+            
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => area.innerHTML = '', 2000);
+            }, 500);
+        }
+
+        function imprimirOS(id) {
+            const os = osCache.find(o => o.id === id);
+            if(!os) return;
+            
+            const cliente = clientesCache.find(c => c.id === os.clienteId);
+            const responsavel = os.responsavelId ? vendedoresCache.find(v => v.id === os.responsavelId) : null;
+            
+            const area = document.getElementById('printable-area');
+            const html = `
+                <div style="width: 210mm; font-family: Arial, sans-serif; font-size: 12px; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">
+                        ${config.logo ? `<img src="${config.logo}" style="max-height: 60px; margin-bottom: 10px;">` : ''}
+                        <h2 style="margin:0">${config.nome}</h2>
+                        <p style="margin:0">${config.end}</p>
+                        <p style="margin:0">${config.tel}</p>
+                    </div>
+                    
+                    <h3 style="text-align: center; color: #2c3e50;">ORDEM DE SERVIÇO #${os.id}</h3>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px; width: 50%;"><strong>Cliente:</strong> ${cliente ? cliente.nome : 'N/A'}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;"><strong>Data Entrada:</strong> ${new Date(os.dataEntrada).toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;"><strong>Telefone:</strong> ${cliente ? cliente.tel : 'N/A'}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;"><strong>Data Entrega:</strong> ${new Date(os.dataEntrega).toLocaleDateString()}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;" colspan="2"><strong>Responsável:</strong> ${responsavel ? responsavel.nome : 'N/A'}</td>
+                        </tr>
+                    </table>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4>Tipo de Serviço:</h4>
+                        <p style="padding: 10px; background: #f8f9fa; border-radius: 5px;">${os.tipo}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4>Descrição do Serviço:</h4>
+                        <p style="padding: 10px; background: #f8f9fa; border-radius: 5px; min-height: 100px;">${os.descricao}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4>Valores:</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;"><strong>Valor do Serviço:</strong> R$ ${os.valor.toFixed(2)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;"><strong>Sinal Recebido:</strong> R$ ${os.sinal.toFixed(2)}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;"><strong>Saldo:</strong> R$ ${(os.valor - os.sinal).toFixed(2)}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4>Observações:</h4>
+                        <p style="padding: 10px; background: #f8f9fa; border-radius: 5px; min-height: 50px;">${os.obs || 'Nenhuma observação.'}</p>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+                        <div style="text-align: center; border-top: 1px solid #000; padding-top: 10px; width: 45%;">
+                            <p><strong>Assinatura do Cliente</strong></p>
+                        </div>
+                        <div style="text-align: center; border-top: 1px solid #000; padding-top: 10px; width: 45%;">
+                            <p><strong>Assinatura do Responsável</strong></p>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; font-size: 10px; color: #666;">
+                        <p>${config.msg || 'Obrigado pela preferência!'}</p>
+                    </div>
+                </div>
+            `;
+            
+            area.innerHTML = html;
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => area.innerHTML = '', 2000);
+            }, 500);
+        }
+
+        // --- HELPER FUNCTIONS ---
+        function getClientName(id) {
+            if(!id) return 'Consumidor Final';
+            const c = clientesCache.find(x => x.id === id);
+            return c ? c.nome : 'Cliente não encontrado';
+        }
+
+        function alertModal(title, content) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header"><h3>${title}</h3><button class="modal-close">&times;</button></div>
+                    <div class="modal-body">${content}</div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" onclick="this.closest('.modal').classList.remove('active')">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            modal.querySelector('.modal-close').onclick = function() { 
+                modal.classList.remove('active');
+                document.body.removeChild(modal);
+            };
+        }
+
+        function exportarParaCSV(dados, nomeArquivo) {
+            if(dados.length === 0) return;
+            
+            const cabecalhos = Object.keys(dados[0]);
+            const linhas = dados.map(linha => 
+                cabecalhos.map(cabecalho => `"${linha[cabecalho] || ''}"`).join(',')
+            );
+            
+            const csv = [cabecalhos.join(','), ...linhas].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${nomeArquivo}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        function setupEvents() {
+            console.log('Configurando eventos...');
+            
+            // Configurar formulário de login
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Formulário de login enviado');
+                    
+                    const u = document.getElementById('login-user').value;
+                    const p = document.getElementById('login-pass').value;
+                    
+                    if (fazerLogin(u, p)) {
+                        console.log('Login realizado com sucesso');
+                    } else {
+                        console.log('Falha no login');
+                    }
+                });
+            } else {
+                console.error('Formulário de login não encontrado!');
+            }
+            
+            // Configurar navegação
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.onclick = function(e) { 
+                    e.preventDefault(); 
+                    navTo(this.dataset.page); 
+                };
+            });
+            
+            // Fechar modais
+            document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.onclick = function() { 
+                    this.closest('.modal').classList.remove('active'); 
+                };
+            });
+            
+            // Fechar modal ao clicar fora
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.onclick = function(e) {
+                    if(e.target === this) this.classList.remove('active');
+                };
+            });
+            
+            // Botão de backup
+            const backupBtn = document.getElementById('backup-btn');
+            if (backupBtn) {
+                backupBtn.onclick = fazerBackup;
+            }
+            
+            // Botão de logout
+            const logoutBtn = document.getElementById('logout-btn');
+            if (logoutBtn) {
+                logoutBtn.onclick = function() {
+                    sessionStorage.removeItem('user');
+                    location.reload();
+                };
+            }
+            
+            // Configurar leitor de código de barras no PDV
+            const vendaSearch = document.getElementById('venda-search');
+            if (vendaSearch) {
+                vendaSearch.addEventListener('keydown', function(e) {
+                    if(e.key === 'Enter') {
+                        e.preventDefault();
+                        const termo = this.value.trim();
+                        if(!termo) return;
+
+                        // Busca exata por código ou parcial por nome
+                        let prod = produtosCache.find(p => p.cod === termo);
+                        
+                        if(!prod) {
+                            // Se não achou código, tenta nome
+                            const matches = produtosCache.filter(p => p.nome.toLowerCase().includes(termo.toLowerCase()));
+                            if(matches.length === 1) prod = matches[0];
+                        }
+
+                        if(prod) {
+                            const qtd = parseInt(document.getElementById('venda-qtd-add').value) || 1;
+                            addAoCarrinho(prod, qtd);
+                            this.value = '';
+                            document.getElementById('venda-qtd-add').value = 1;
+                            // Beep sound simulation
+                            try { new AudioContext().createOscillator().start().stop(); } catch(e) {}
+                        } else {
+                            alert('Produto não encontrado!');
+                        }
+                    }
+                });
+            }
+            
+            console.log('Eventos configurados com sucesso');
+        }
+
+        // Adicionar dados iniciais para teste se o banco estiver vazio
+        function adicionarDadosIniciais() {
+            console.log('Verificando dados iniciais...');
+            const tx = db.transaction('config', 'readonly');
+            tx.objectStore('config').get(1).onsuccess = function(e) {
+                if (!e.target.result) {
+                    console.log('Adicionando dados iniciais...');
+                    // Adicionar configuração padrão
+                    const configInicial = {
+                        id: 1,
+                        nome: 'Ótica VisionPlus Premium',
+                        tel: '(11) 99999-9999',
+                        end: 'Rua Exemplo, 123 - Centro - São Paulo/SP',
+                        msg: 'Obrigado pela preferência!',
+                        comissao: 5,
+                        impressora: 'termica',
+                        copias: 1,
+                        textoExtra: ''
+                    };
+                    
+                    db.transaction('config', 'readwrite').objectStore('config').put(configInicial);
+                    
+                    // Adicionar produtos de exemplo
+                    const produtosExemplo = [
+                        {
+                            nome: 'Armação Masculina Preto',
+                            cod: '7891234567890',
+                            cat: 'Armacao',
+                            custo: 45.00,
+                            preco: 120.00,
+                            qtd: 10,
+                            min: 3,
+                            max: 50,
+                            caracteristicas: 'Cor: Preto, Material: Acetato'
+                        },
+                        {
+                            nome: 'Lente Transição Cinza',
+                            cod: '7899876543210',
+                            cat: 'Lente',
+                            custo: 80.00,
+                            preco: 250.00,
+                            qtd: 15,
+                            min: 5,
+                            max: 100,
+                            caracteristicas: 'Fotossensível, Proteção UV'
+                        }
+                    ];
+                    
+                    const txProd = db.transaction('produtos', 'readwrite');
+                    produtosExemplo.forEach(prod => {
+                        txProd.objectStore('produtos').add(prod);
+                    });
+                    
+                    // Adicionar cliente de exemplo
+                    const clienteExemplo = {
+                        nome: 'João da Silva',
+                        cpf: '123.456.789-00',
+                        tel: '11999999999',
+                        email: 'joao@email.com',
+                        nasc: '1985-05-15',
+                        genero: 'M',
+                        endereco: 'Rua das Flores, 123',
+                        obs: 'Cliente preferencial',
+                        dataCadastro: new Date().toISOString().split('T')[0]
+                    };
+                    
+                    db.transaction('clientes', 'readwrite').objectStore('clientes').add(clienteExemplo);
+                    
+                    // Adicionar vendedor de exemplo
+                    const vendedorExemplo = {
+                        nome: 'Maria Souza',
+                        cpf: '987.654.321-00',
+                        telefone: '11988888888',
+                        email: 'maria@email.com',
+                        comissao: 5,
+                        status: 'ativo',
+                        obs: 'Vendedora principal'
+                    };
+                    
+                    db.transaction('vendedores', 'readwrite').objectStore('vendedores').add(vendedorExemplo);
+                    
+                    console.log('Dados iniciais adicionados com sucesso!');
+                }
+            };
+        }
+        
+        // Executar após inicialização
+        setTimeout(() => {
+            adicionarDadosIniciais();
+        }, 1000);
+    </script>
+</body>
+</html>
