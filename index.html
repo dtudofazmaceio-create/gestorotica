@@ -1,9 +1,28 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Ótica VisionPlus - Sistema Premium Completo</title>
+
+    <!-- ===== PWA / App nativo ===== -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="description" content="Sistema de gestão para óticas: vendas, OS, estoque e clientes. Funciona offline.">
+
+    <!-- iOS / Safari: comportamento de app em tela cheia -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VisionPlus">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Ícones -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+    <!-- =========================== -->
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -3326,6 +3345,219 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         setTimeout(() => {
             adicionarDadosIniciais();
         }, 1000);
+    </script>
+
+    <!-- ======================= PWA: estilos ======================= -->
+    <style>
+        /* Respeita o "notch"/barras quando rodando como app instalado */
+        @media all and (display-mode: standalone), all and (display-mode: fullscreen) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+            }
+        }
+
+        /* Botão flutuante de instalação */
+        #pwa-install-btn {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: var(--secondary-color, #3498db);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25);
+            animation: pwaUp .35s ease;
+        }
+        #pwa-install-btn:active { transform: translateX(-50%) scale(.97); }
+        #pwa-install-btn .pwa-close {
+            margin-left: 4px; opacity:.85; font-size: 13px;
+            background: rgba(255,255,255,.2); border-radius:50%;
+            width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center;
+        }
+        @keyframes pwaUp { from{opacity:0; transform:translate(-50%,20px);} to{opacity:1; transform:translate(-50%,0);} }
+
+        /* Indicador de offline */
+        #pwa-offline-bar {
+            position: fixed;
+            top: env(safe-area-inset-top, 0);
+            left: 0; right: 0;
+            z-index: 10001;
+            display: none;
+            text-align: center;
+            background: var(--warning-color, #f39c12);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.2);
+        }
+        #pwa-offline-bar.show { display: block; animation: pwaDown .3s ease; }
+        @keyframes pwaDown { from{opacity:0; transform:translateY(-100%);} to{opacity:1; transform:translateY(0);} }
+
+        /* Aviso de nova versão disponível */
+        #pwa-update-toast {
+            position: fixed;
+            left: 50%; transform: translateX(-50%);
+            bottom: calc(16px + env(safe-area-inset-bottom));
+            z-index: 10002;
+            display: none;
+            align-items: center; gap: 12px;
+            background: var(--primary-color, #2c3e50);
+            color: #fff; padding: 12px 18px; border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.3); font-size: 14px;
+        }
+        #pwa-update-toast button {
+            background: var(--success-color, #27ae60); color:#fff; border:none;
+            padding: 8px 14px; border-radius: 6px; font-weight:600; cursor:pointer;
+        }
+    </style>
+
+    <!-- ===================== PWA: comportamento ===================== -->
+    <button id="pwa-install-btn" type="button">
+        <i class="fas fa-download"></i>
+        <span>Instalar app</span>
+        <span class="pwa-close" title="Agora não">&times;</span>
+    </button>
+    <div id="pwa-offline-bar"><i class="fas fa-wifi"></i> Você está offline — o sistema continua funcionando normalmente.</div>
+    <div id="pwa-update-toast">
+        <span>Nova versão disponível.</span>
+        <button type="button" id="pwa-update-btn">Atualizar</button>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        // ---------- 1) Registro do Service Worker ----------
+        let swRegistration = null;
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('sw.js')
+                    .then(function (reg) {
+                        swRegistration = reg;
+                        console.log('[PWA] Service Worker registrado.');
+
+                        // Detecta atualização disponível
+                        reg.addEventListener('updatefound', function () {
+                            const sw = reg.installing;
+                            if (!sw) return;
+                            sw.addEventListener('statechange', function () {
+                                if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+                                    mostrarToastAtualizacao(reg);
+                                }
+                            });
+                        });
+                    })
+                    .catch(function (err) {
+                        console.warn('[PWA] Falha ao registrar Service Worker:', err);
+                    });
+
+                // Recarrega quando o novo SW assume o controle
+                let recarregando = false;
+                navigator.serviceWorker.addEventListener('controllerchange', function () {
+                    if (recarregando) return;
+                    recarregando = true;
+                    window.location.reload();
+                });
+            });
+        }
+
+        function mostrarToastAtualizacao(reg) {
+            const toast = document.getElementById('pwa-update-toast');
+            const btn = document.getElementById('pwa-update-btn');
+            if (!toast || !btn) return;
+            toast.style.display = 'flex';
+            btn.onclick = function () {
+                if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+                toast.style.display = 'none';
+            };
+        }
+
+        // ---------- 2) Botão "Instalar app" (Android/desktop) ----------
+        let deferredPrompt = null;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (!ehStandalone()) {
+                installBtn.style.display = 'inline-flex';
+            }
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', function (ev) {
+                // Clique no "x" apenas dispensa
+                if (ev.target.classList.contains('pwa-close')) {
+                    installBtn.style.display = 'none';
+                    return;
+                }
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.finally(function () {
+                        deferredPrompt = null;
+                        installBtn.style.display = 'none';
+                    });
+                } else if (ehIOS()) {
+                    instrucoesIOS();
+                }
+            });
+        }
+
+        window.addEventListener('appinstalled', function () {
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+            console.log('[PWA] App instalado.');
+        });
+
+        // iOS não dispara beforeinstallprompt: mostra botão com instruções manuais
+        if (ehIOS() && !ehStandalone()) {
+            window.addEventListener('load', function () {
+                installBtn.querySelector('span:not(.pwa-close)').textContent = 'Adicionar à tela inicial';
+                installBtn.style.display = 'inline-flex';
+            });
+        }
+
+        function instrucoesIOS() {
+            alert('Para instalar no iPhone/iPad:\n\n1. Toque no botão Compartilhar (quadrado com seta) na barra do Safari.\n2. Escolha "Adicionar à Tela de Início".\n3. Toque em "Adicionar".');
+        }
+
+        function ehIOS() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+        }
+        function ehStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.matchMedia('(display-mode: fullscreen)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        // ---------- 3) Indicador de offline/online ----------
+        const offlineBar = document.getElementById('pwa-offline-bar');
+        function atualizarStatusRede() {
+            if (!offlineBar) return;
+            if (navigator.onLine) {
+                offlineBar.classList.remove('show');
+            } else {
+                offlineBar.classList.add('show');
+            }
+        }
+        window.addEventListener('online', atualizarStatusRede);
+        window.addEventListener('offline', atualizarStatusRede);
+        atualizarStatusRede();
+    })();
     </script>
 </body>
 </html>
