@@ -176,6 +176,26 @@
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-weight: 600; color: var(--dark-color); }
         .tab.active { border-bottom-color: var(--secondary-color); color: var(--secondary-color); }
 
+        /* ===== Backup em Nuvem ===== */
+        .cloud-box { border: 1px solid #e3e8ee; border-radius: var(--border-radius); padding: 1.25rem; margin-top: 1rem; background: #fff; }
+        .cloud-box h4 { color: var(--primary-color); margin-bottom: .75rem; display:flex; align-items:center; gap:8px; }
+        .cloud-status-pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; font-size:.8rem; font-weight:700; }
+        .cloud-status-pill .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+        .pill-off { background:#f8d7da; color:#721c24; } .pill-off .dot{ background:#c0392b; }
+        .pill-on { background:#d4edda; color:#155724; } .pill-on .dot{ background:#27ae60; }
+        .pill-sync { background:#d1ecf1; color:#0c5460; } .pill-sync .dot{ background:#17a2b8; animation: cloudPulse 1s infinite; }
+        @keyframes cloudPulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+        .cloud-hint { font-size:.82rem; color:#666; margin-top:.5rem; line-height:1.4; }
+        .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+        .switch input { opacity:0; width:0; height:0; }
+        .switch .slider { position:absolute; cursor:pointer; inset:0; background:#ccc; transition:.3s; border-radius:26px; }
+        .switch .slider:before { position:absolute; content:""; height:20px; width:20px; left:3px; bottom:3px; background:white; transition:.3s; border-radius:50%; }
+        .switch input:checked + .slider { background: var(--success-color); }
+        .switch input:checked + .slider:before { transform: translateX(22px); }
+        .cloud-config-advanced { display:none; margin-top:1rem; padding-top:1rem; border-top:1px dashed #e3e8ee; }
+        .cloud-config-advanced.open { display:block; }
+        .link-toggle { color: var(--secondary-color); cursor:pointer; font-size:.85rem; font-weight:600; text-decoration:underline; }
+
         /* Filtros */
         .filter-bar { background: white; padding: 1rem; border-radius: var(--border-radius); box-shadow: var(--shadow); margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
 
@@ -648,14 +668,88 @@
 
                 <div id="config-backup" class="form-container" style="display: none;">
                     <h3>Backup e Restauração</h3>
-                    <p>Faça backup completo do sistema regularmente para evitar perda de dados.</p>
-                    <div class="form-row">
-                        <button class="btn btn-success" onclick="fazerBackup()"><i class="fas fa-download"></i> Fazer Backup</button>
-                        <button class="btn btn-warning" onclick="document.getElementById('restore-input').click()"><i class="fas fa-upload"></i> Restaurar Backup</button>
-                        <input type="file" id="restore-input" hidden accept=".json" onchange="restaurarBackup(this)">
+
+                    <!-- ===== Backup local (arquivo) ===== -->
+                    <div class="cloud-box">
+                        <h4><i class="fas fa-hdd"></i> Backup Local (arquivo)</h4>
+                        <p style="font-size:.9rem; color:#555;">Gera um arquivo <strong>.json</strong> com todos os dados do sistema, que você pode guardar no computador ou pen drive.</p>
+                        <div class="form-row" style="margin-top:.75rem;">
+                            <button class="btn btn-success" onclick="fazerBackup()"><i class="fas fa-download"></i> Baixar Backup</button>
+                            <button class="btn btn-warning" onclick="document.getElementById('restore-input').click()"><i class="fas fa-upload"></i> Restaurar de Arquivo</button>
+                            <input type="file" id="restore-input" hidden accept=".json" onchange="restaurarBackup(this)">
+                        </div>
+                        <div class="cloud-hint">Último backup local: <strong><span id="last-backup">Nunca</span></strong></div>
                     </div>
-                    <div id="backup-info" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: var(--border-radius);">
-                        <small>Último backup: <span id="last-backup">Nunca</span></small>
+
+                    <!-- ===== Backup em nuvem (Firebase) ===== -->
+                    <div class="cloud-box">
+                        <h4><i class="fas fa-cloud"></i> Backup em Nuvem (Firebase)</h4>
+                        <p style="font-size:.9rem; color:#555;">Mantém seus dados seguros na nuvem. Permite restaurar em caso de perda, <strong>troca de dispositivo</strong> ou falha do sistema. Convive com o armazenamento local: o sistema continua funcionando offline e sincroniza quando há internet.</p>
+
+                        <div style="margin:.75rem 0;">
+                            <span id="cloud-status" class="cloud-status-pill pill-off"><span class="dot"></span> Não configurado</span>
+                        </div>
+
+                        <!-- Conta -->
+                        <div id="cloud-auth-area">
+                            <div class="form-row" id="cloud-login-fields">
+                                <div class="form-group">
+                                    <label>E-mail da conta de backup</label>
+                                    <input type="email" id="cloud-email" placeholder="seuemail@exemplo.com" autocomplete="username">
+                                </div>
+                                <div class="form-group">
+                                    <label>Senha</label>
+                                    <input type="password" id="cloud-pass" placeholder="••••••••" autocomplete="current-password">
+                                </div>
+                            </div>
+                            <div class="form-row" id="cloud-auth-buttons">
+                                <button class="btn btn-primary" onclick="cloudLogin()"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+                                <button class="btn btn-info" onclick="cloudRegister()"><i class="fas fa-user-plus"></i> Criar Conta</button>
+                            </div>
+                            <div class="form-row" id="cloud-logged-buttons" style="display:none;">
+                                <button class="btn btn-dark" onclick="cloudLogout()"><i class="fas fa-sign-out-alt"></i> Sair da conta de nuvem</button>
+                            </div>
+                        </div>
+
+                        <!-- Ações de backup/restauração na nuvem -->
+                        <div id="cloud-actions" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px dashed #e3e8ee;">
+                            <div class="form-row">
+                                <button class="btn btn-success" onclick="backupParaNuvem()"><i class="fas fa-cloud-upload-alt"></i> Enviar para a Nuvem</button>
+                                <button class="btn btn-warning" onclick="restaurarDaNuvem()"><i class="fas fa-cloud-download-alt"></i> Restaurar da Nuvem</button>
+                            </div>
+                            <div class="form-row" style="align-items:center; gap:12px;">
+                                <label class="switch"><input type="checkbox" id="auto-sync-toggle" onchange="alternarAutoSync(this.checked)"><span class="slider"></span></label>
+                                <div>
+                                    <strong style="font-size:.9rem;">Sincronização automática</strong>
+                                    <div class="cloud-hint" style="margin:0;">Envia alterações para a nuvem automaticamente quando há conexão.</div>
+                                </div>
+                            </div>
+                            <div class="cloud-hint">Último envio para a nuvem: <strong><span id="last-cloud-backup">Nunca</span></strong></div>
+                        </div>
+
+                        <!-- Configuração avançada do projeto Firebase -->
+                        <div style="margin-top:1rem;">
+                            <span class="link-toggle" onclick="document.getElementById('cloud-config-advanced').classList.toggle('open')"><i class="fas fa-cog"></i> Configurar projeto Firebase</span>
+                        </div>
+                        <div id="cloud-config-advanced" class="cloud-config-advanced">
+                            <p class="cloud-hint">Cole abaixo os dados do seu projeto Firebase (Configurações do projeto → Seus apps → SDK do Firebase). Esses dados ficam salvos apenas neste dispositivo.</p>
+                            <div class="form-row">
+                                <div class="form-group"><label>apiKey</label><input type="text" id="fb-apiKey"></div>
+                                <div class="form-group"><label>authDomain</label><input type="text" id="fb-authDomain" placeholder="seu-projeto.firebaseapp.com"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label>projectId</label><input type="text" id="fb-projectId"></div>
+                                <div class="form-group"><label>storageBucket</label><input type="text" id="fb-storageBucket" placeholder="seu-projeto.appspot.com"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label>messagingSenderId</label><input type="text" id="fb-messagingSenderId"></div>
+                                <div class="form-group"><label>appId</label><input type="text" id="fb-appId"></div>
+                            </div>
+                            <div class="form-row">
+                                <button class="btn btn-primary" onclick="salvarFirebaseConfig()"><i class="fas fa-save"></i> Salvar Configuração</button>
+                                <button class="btn btn-danger" onclick="limparFirebaseConfig()"><i class="fas fa-trash"></i> Remover</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1274,6 +1368,9 @@
                 
                 // Verificar autenticação
                 checkAuth();
+
+                // Inicializar backup em nuvem (se já configurado neste dispositivo)
+                setTimeout(inicializarBackupNuvem, 1200);
             };
             
             request.onerror = function(e) {
@@ -3340,6 +3437,497 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             };
         }
         
+        // ===================================================================
+        // ============ BACKUP LOCAL (ARQUIVO) + BACKUP EM NUVEM =============
+        // ===================================================================
+        // Estratégia: local-first. Todos os dados continuam sendo gravados no
+        // IndexedDB (etapa anterior). O backup gera um "snapshot" completo que é
+        // usado tanto para o arquivo .json local quanto para a nuvem (Firebase),
+        // garantindo o mesmo formato e total compatibilidade entre os dois.
+
+        // Stores de negócio que entram no backup (backup_log fica de fora: é log local)
+        const BACKUP_STORES = ['produtos','clientes','vendas','orcamentos','config',
+            'fornecedores','vendedores','ordens_servico','consultas','compras','comissoes'];
+
+        // ---------- Coleta e aplicação de snapshot no IndexedDB ----------
+        function coletarTodosDados() {
+            return new Promise((resolve, reject) => {
+                if (!db) return reject(new Error('Banco de dados não inicializado.'));
+                const snapshot = {
+                    meta: {
+                        app: 'OticaVisionPlus',
+                        dbName: DB_NAME,
+                        dbVersion: DB_VERSION,
+                        exportadoEm: new Date().toISOString(),
+                        dispositivo: navigator.userAgent
+                    },
+                    stores: {}
+                };
+                let pendentes = BACKUP_STORES.length;
+                let falhou = false;
+                BACKUP_STORES.forEach(nome => {
+                    try {
+                        const req = db.transaction(nome, 'readonly').objectStore(nome).getAll();
+                        req.onsuccess = e => {
+                            snapshot.stores[nome] = e.target.result || [];
+                            if (--pendentes === 0 && !falhou) resolve(snapshot);
+                        };
+                        req.onerror = e => { if (!falhou) { falhou = true; reject(e.target.error); } };
+                    } catch (err) {
+                        // Store pode não existir em versões antigas: trata como vazia
+                        snapshot.stores[nome] = [];
+                        if (--pendentes === 0 && !falhou) resolve(snapshot);
+                    }
+                });
+            });
+        }
+
+        function aplicarSnapshot(snapshot) {
+            return new Promise((resolve, reject) => {
+                if (!snapshot || !snapshot.stores || typeof snapshot.stores !== 'object')
+                    return reject(new Error('Arquivo de backup inválido ou corrompido.'));
+                const stores = Object.keys(snapshot.stores).filter(s => db.objectStoreNames.contains(s));
+                if (!stores.length) return reject(new Error('O backup não contém dados reconhecíveis.'));
+                const tx = db.transaction(stores, 'readwrite');
+                tx.oncomplete = () => resolve();
+                tx.onerror = e => reject(e.target.error);
+                stores.forEach(nome => {
+                    const os = tx.objectStore(nome);
+                    os.clear(); // substitui todo o conteúdo local pelo do backup
+                    (snapshot.stores[nome] || []).forEach(reg => { try { os.put(reg); } catch (e) {} });
+                });
+            });
+        }
+
+        function dadosLocaisVazios(snapshot) {
+            // Considera "vazio" se não há nenhum registro de negócio (ignora config)
+            let total = 0;
+            for (const k of Object.keys(snapshot.stores)) {
+                if (k === 'config') continue;
+                total += (snapshot.stores[k] || []).length;
+            }
+            return total === 0;
+        }
+
+        // Assinatura leve para detectar mudanças (auto-sync)
+        function assinaturaDados(snapshot) {
+            let hash = 0, total = 0;
+            for (const k of Object.keys(snapshot.stores)) {
+                const arr = snapshot.stores[k] || [];
+                total += arr.length;
+                const str = JSON.stringify(arr);
+                for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+            }
+            return total + ':' + hash;
+        }
+
+        function registrarBackup(tipo) {
+            const reg = { tipo: tipo, data: new Date().toISOString(), usuario: usuarioAtual };
+            try {
+                if (db.objectStoreNames.contains('backup_log'))
+                    db.transaction('backup_log', 'readwrite').objectStore('backup_log').add(reg);
+            } catch (e) {}
+            try { localStorage.setItem('ultimoBackup_' + tipo, reg.data); } catch (e) {}
+        }
+
+        function fmtData(iso) {
+            if (!iso) return 'Nunca';
+            try { return new Date(iso).toLocaleString('pt-BR'); } catch (e) { return iso; }
+        }
+
+        function carregarInfoBackup() {
+            const local = localStorage.getItem('ultimoBackup_local');
+            const nuvem = localStorage.getItem('ultimoBackup_nuvem');
+            const elLocal = document.getElementById('last-backup');
+            const elNuvem = document.getElementById('last-cloud-backup');
+            if (elLocal) elLocal.textContent = fmtData(local);
+            if (elNuvem) elNuvem.textContent = fmtData(nuvem);
+            preencherFormFirebase();
+            atualizarUICloud();
+        }
+
+        // ---------- BACKUP LOCAL (arquivo .json) ----------
+        async function fazerBackup() {
+            try {
+                const snapshot = await coletarTodosDados();
+                const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `backup_oticavision_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(link.href), 2000);
+                registrarBackup('local');
+                carregarInfoBackup();
+            } catch (e) {
+                console.error('Erro no backup local:', e);
+                alert('Erro ao gerar backup: ' + e.message);
+            }
+        }
+
+        function restaurarBackup(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (!confirm('Restaurar irá SUBSTITUIR todos os dados locais atuais pelos dados do arquivo. Deseja continuar?')) {
+                input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async e => {
+                try {
+                    const snapshot = JSON.parse(e.target.result);
+                    await aplicarSnapshot(snapshot);
+                    alert('Backup restaurado com sucesso! A página será recarregada.');
+                    location.reload();
+                } catch (err) {
+                    console.error('Erro ao restaurar:', err);
+                    alert('Não foi possível restaurar: ' + err.message);
+                }
+                input.value = '';
+            };
+            reader.onerror = () => { alert('Erro ao ler o arquivo.'); input.value = ''; };
+            reader.readAsText(file);
+        }
+
+        // ===================================================================
+        // ======================= BACKUP EM NUVEM ===========================
+        // ===================================================================
+        const FIREBASE_VER = '10.12.2';
+        const CHUNK_BYTES = 600 * 1024; // ~600KB por documento (limite do Firestore é 1MB)
+        let fb = { app: null, auth: null, fs: null, user: null, sdk: null, iniciado: false };
+        let ultimaAssinatura = null;
+        let autoSyncTimer = null;
+        let sincronizando = false;
+
+        function getFirebaseConfig() {
+            try {
+                const raw = localStorage.getItem('firebaseConfig');
+                if (!raw) return null;
+                const cfg = JSON.parse(raw);
+                return (cfg && cfg.apiKey && cfg.projectId) ? cfg : null;
+            } catch (e) { return null; }
+        }
+        function autoSyncAtivo() { return localStorage.getItem('autoSyncNuvem') === '1'; }
+
+        function preencherFormFirebase() {
+            const cfg = getFirebaseConfig() || {};
+            ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(k => {
+                const el = document.getElementById('fb-' + k);
+                if (el) el.value = cfg[k] || '';
+            });
+            const tgl = document.getElementById('auto-sync-toggle');
+            if (tgl) tgl.checked = autoSyncAtivo();
+        }
+
+        function salvarFirebaseConfig() {
+            const cfg = {};
+            ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(k => {
+                const el = document.getElementById('fb-' + k);
+                cfg[k] = el ? el.value.trim() : '';
+            });
+            if (!cfg.apiKey || !cfg.projectId) {
+                alert('Informe ao menos apiKey e projectId.');
+                return;
+            }
+            localStorage.setItem('firebaseConfig', JSON.stringify(cfg));
+            // Reinicia o estado para aplicar a nova configuração
+            fb = { app: null, auth: null, fs: null, user: null, sdk: null, iniciado: false };
+            alert('Configuração salva! Agora faça login (ou crie uma conta) para usar o backup em nuvem.');
+            inicializarBackupNuvem();
+        }
+
+        function limparFirebaseConfig() {
+            if (!confirm('Remover a configuração do Firebase deste dispositivo? O backup em nuvem deixará de funcionar até ser reconfigurado.')) return;
+            localStorage.removeItem('firebaseConfig');
+            localStorage.removeItem('autoSyncNuvem');
+            fb = { app: null, auth: null, fs: null, user: null, sdk: null, iniciado: false };
+            if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+            atualizarUICloud();
+            preencherFormFirebase();
+        }
+
+        async function carregarFirebaseSDK() {
+            if (window._fbsdk) return window._fbsdk;
+            const base = `https://www.gstatic.com/firebasejs/${FIREBASE_VER}/`;
+            const [appMod, authMod, fsMod] = await Promise.all([
+                import(base + 'firebase-app.js'),
+                import(base + 'firebase-auth.js'),
+                import(base + 'firebase-firestore.js')
+            ]);
+            window._fbsdk = { appMod, authMod, fsMod };
+            return window._fbsdk;
+        }
+
+        async function inicializarBackupNuvem() {
+            const cfg = getFirebaseConfig();
+            if (!cfg) { atualizarUICloud(); return false; }
+            try {
+                if (!fb.iniciado) {
+                    const sdk = await carregarFirebaseSDK();
+                    fb.sdk = sdk;
+                    fb.app = sdk.appMod.initializeApp(cfg);
+                    fb.auth = sdk.authMod.getAuth(fb.app);
+                    fb.fs = sdk.fsMod.getFirestore(fb.app);
+                    fb.iniciado = true;
+                    sdk.authMod.onAuthStateChanged(fb.auth, u => {
+                        fb.user = u;
+                        atualizarUICloud();
+                        if (u) sincronizarAposLogin();
+                        else if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+                    });
+                }
+                atualizarUICloud();
+                return true;
+            } catch (e) {
+                console.error('Falha ao inicializar Firebase:', e);
+                atualizarUICloud('Erro de configuração do Firebase');
+                return false;
+            }
+        }
+
+        async function cloudRegister() {
+            if (!await garantirFirebase()) return;
+            const email = (document.getElementById('cloud-email').value || '').trim();
+            const pass = document.getElementById('cloud-pass').value || '';
+            if (!email || pass.length < 6) { alert('Informe um e-mail válido e uma senha com pelo menos 6 caracteres.'); return; }
+            try {
+                await fb.sdk.authMod.createUserWithEmailAndPassword(fb.auth, email, pass);
+                alert('Conta criada e conectada! Use o mesmo e-mail e senha para acessar seus dados em outros dispositivos.');
+            } catch (e) { alert('Não foi possível criar a conta: ' + traduzErroFirebase(e)); }
+        }
+
+        async function cloudLogin() {
+            if (!await garantirFirebase()) return;
+            const email = (document.getElementById('cloud-email').value || '').trim();
+            const pass = document.getElementById('cloud-pass').value || '';
+            if (!email || !pass) { alert('Informe e-mail e senha.'); return; }
+            try {
+                await fb.sdk.authMod.signInWithEmailAndPassword(fb.auth, email, pass);
+            } catch (e) { alert('Não foi possível entrar: ' + traduzErroFirebase(e)); }
+        }
+
+        async function cloudLogout() {
+            if (fb.auth) { try { await fb.sdk.authMod.signOut(fb.auth); } catch (e) {} }
+            if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+            atualizarUICloud();
+        }
+
+        async function garantirFirebase() {
+            if (!getFirebaseConfig()) {
+                alert('Primeiro configure o projeto Firebase em "Configurar projeto Firebase".');
+                document.getElementById('cloud-config-advanced').classList.add('open');
+                return false;
+            }
+            return await inicializarBackupNuvem();
+        }
+
+        function traduzErroFirebase(e) {
+            const c = (e && e.code) ? e.code : '';
+            const mapa = {
+                'auth/invalid-email': 'E-mail inválido.',
+                'auth/user-not-found': 'Usuário não encontrado.',
+                'auth/wrong-password': 'Senha incorreta.',
+                'auth/invalid-credential': 'E-mail ou senha incorretos.',
+                'auth/email-already-in-use': 'Este e-mail já está cadastrado. Use "Entrar".',
+                'auth/weak-password': 'Senha muito fraca (mínimo 6 caracteres).',
+                'auth/network-request-failed': 'Sem conexão com a internet.',
+                'auth/operation-not-allowed': 'Ative o login por E-mail/Senha no painel do Firebase (Authentication).'
+            };
+            return mapa[c] || (e && e.message) || 'Erro desconhecido.';
+        }
+
+        // Divide os registros de uma store em pedaços de tamanho seguro
+        function dividirEmChunks(records, maxBytes) {
+            const chunks = []; let atual = []; let tam = 0;
+            for (const r of records) {
+                const s = JSON.stringify(r).length;
+                if (atual.length && tam + s > maxBytes) { chunks.push(atual); atual = []; tam = 0; }
+                atual.push(r); tam += s;
+            }
+            if (atual.length) chunks.push(atual);
+            if (!chunks.length) chunks.push([]); // garante 1 doc mesmo se vazio
+            return chunks;
+        }
+
+        async function backupParaNuvem(silencioso) {
+            if (!fb.user) { if (!silencioso) alert('Faça login na conta de nuvem primeiro.'); return; }
+            if (!navigator.onLine) { if (!silencioso) alert('Sem conexão com a internet.'); return; }
+            if (sincronizando) return;
+            sincronizando = true;
+            atualizarUICloud();
+            try {
+                const { doc, setDoc, collection, getDocs, deleteDoc } = fb.sdk.fsMod;
+                const snapshot = await coletarTodosDados();
+                const uid = fb.user.uid;
+
+                for (const store of Object.keys(snapshot.stores)) {
+                    const records = snapshot.stores[store];
+                    const chunks = dividirEmChunks(records, CHUNK_BYTES);
+                    // Documento de metadados da store
+                    await setDoc(doc(fb.fs, 'usuarios', uid, 'backup', store), {
+                        count: records.length, chunks: chunks.length, atualizadoEm: new Date().toISOString()
+                    });
+                    const chunkCol = collection(fb.fs, 'usuarios', uid, 'backup', store, 'chunks');
+                    for (let i = 0; i < chunks.length; i++) {
+                        await setDoc(doc(chunkCol, String(i)), { records: JSON.stringify(chunks[i]) });
+                    }
+                    // Remove chunks antigos que sobraram (se a base diminuiu)
+                    const existentes = await getDocs(chunkCol);
+                    const remocoes = [];
+                    existentes.forEach(d => { if (Number(d.id) >= chunks.length) remocoes.push(deleteDoc(d.ref)); });
+                    await Promise.all(remocoes);
+                }
+
+                // Metadados gerais do backup
+                await setDoc(doc(fb.fs, 'usuarios', uid, 'meta', 'backup'), {
+                    atualizadoEm: new Date().toISOString(),
+                    dispositivo: navigator.userAgent,
+                    dbVersion: DB_VERSION
+                });
+
+                ultimaAssinatura = assinaturaDados(snapshot);
+                localStorage.setItem('ultimoBackup_nuvem', new Date().toISOString());
+                registrarBackup('nuvem');
+                if (!silencioso) alert('Dados enviados para a nuvem com sucesso!');
+            } catch (e) {
+                console.error('Erro no backup em nuvem:', e);
+                if (!silencioso) alert('Erro ao enviar para a nuvem: ' + (e.message || e));
+            } finally {
+                sincronizando = false;
+                carregarInfoBackup();
+            }
+        }
+
+        async function restaurarDaNuvem() {
+            if (!fb.user) { alert('Faça login na conta de nuvem primeiro.'); return; }
+            if (!navigator.onLine) { alert('Sem conexão com a internet.'); return; }
+            if (!confirm('Isto irá SUBSTITUIR todos os dados locais pelos dados salvos na nuvem. Deseja continuar?')) return;
+            try {
+                const { doc, getDoc, collection, getDocs } = fb.sdk.fsMod;
+                const uid = fb.user.uid;
+                const snapshot = { meta: { restauradoEm: new Date().toISOString() }, stores: {} };
+                let encontrou = false;
+
+                for (const store of BACKUP_STORES) {
+                    const metaSnap = await getDoc(doc(fb.fs, 'usuarios', uid, 'backup', store));
+                    if (!metaSnap.exists()) continue;
+                    encontrou = true;
+                    const chunkDocs = await getDocs(collection(fb.fs, 'usuarios', uid, 'backup', store, 'chunks'));
+                    const ordenados = chunkDocs.docs.slice().sort((a, b) => Number(a.id) - Number(b.id));
+                    let recs = [];
+                    ordenados.forEach(d => {
+                        const data = d.data();
+                        if (data && data.records) { try { recs = recs.concat(JSON.parse(data.records)); } catch (e) {} }
+                    });
+                    snapshot.stores[store] = recs;
+                }
+
+                if (!encontrou) { alert('Nenhum backup encontrado na nuvem para esta conta.'); return; }
+                await aplicarSnapshot(snapshot);
+                alert('Dados restaurados da nuvem com sucesso! A página será recarregada.');
+                location.reload();
+            } catch (e) {
+                console.error('Erro ao restaurar da nuvem:', e);
+                alert('Erro ao restaurar da nuvem: ' + (e.message || e));
+            }
+        }
+
+        // Decide o que fazer logo após o login (evita apagar a nuvem com base vazia)
+        async function sincronizarAposLogin() {
+            atualizarUICloud();
+            try {
+                const { doc, getDoc } = fb.sdk.fsMod;
+                const metaSnap = await getDoc(doc(fb.fs, 'usuarios', fb.user.uid, 'meta', 'backup'));
+                const local = await coletarTodosDados();
+                const vazio = dadosLocaisVazios(local);
+
+                if (metaSnap.exists() && vazio) {
+                    // Dispositivo novo / sem dados: oferece restaurar a nuvem
+                    if (confirm('Encontramos um backup na nuvem e este dispositivo está sem dados. Deseja restaurar agora?')) {
+                        await restaurarDaNuvem();
+                        return;
+                    }
+                } else if (autoSyncAtivo() && !vazio) {
+                    // Há dados locais: envia o estado atual
+                    await backupParaNuvem(true);
+                }
+                ultimaAssinatura = assinaturaDados(local);
+                if (autoSyncAtivo()) iniciarAutoSync();
+            } catch (e) { console.warn('Sincronização pós-login falhou:', e); }
+        }
+
+        function alternarAutoSync(ativo) {
+            if (ativo && !fb.user) {
+                alert('Faça login na conta de nuvem para ativar a sincronização automática.');
+                document.getElementById('auto-sync-toggle').checked = false;
+                return;
+            }
+            localStorage.setItem('autoSyncNuvem', ativo ? '1' : '0');
+            if (ativo) { iniciarAutoSync(); verificarAutoSync(); }
+            else if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+            atualizarUICloud();
+        }
+
+        function iniciarAutoSync() {
+            if (autoSyncTimer) clearInterval(autoSyncTimer);
+            autoSyncTimer = setInterval(verificarAutoSync, 60000); // verifica a cada 60s
+        }
+
+        async function verificarAutoSync() {
+            if (!autoSyncAtivo() || !fb.user || !navigator.onLine || sincronizando) return;
+            try {
+                const snapshot = await coletarTodosDados();
+                if (dadosLocaisVazios(snapshot)) return; // nunca empurra base vazia
+                const sig = assinaturaDados(snapshot);
+                if (sig !== ultimaAssinatura) {
+                    await backupParaNuvem(true);
+                }
+            } catch (e) { console.warn('Auto-sync falhou:', e); }
+        }
+
+        // Dispara verificação ao voltar a ficar online e ao sair da aba
+        window.addEventListener('online', () => { if (autoSyncAtivo()) verificarAutoSync(); });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && autoSyncAtivo()) verificarAutoSync();
+        });
+
+        // ---------- Atualização da interface do módulo nuvem ----------
+        function atualizarUICloud(msgErro) {
+            const pill = document.getElementById('cloud-status');
+            const acoes = document.getElementById('cloud-actions');
+            const loginFields = document.getElementById('cloud-login-fields');
+            const authBtns = document.getElementById('cloud-auth-buttons');
+            const loggedBtns = document.getElementById('cloud-logged-buttons');
+            if (!pill) return; // aba de backup ainda não montada
+
+            const temConfig = !!getFirebaseConfig();
+            const logado = !!fb.user;
+
+            if (msgErro) {
+                pill.className = 'cloud-status-pill pill-off';
+                pill.innerHTML = `<span class="dot"></span> ${msgErro}`;
+            } else if (!temConfig) {
+                pill.className = 'cloud-status-pill pill-off';
+                pill.innerHTML = '<span class="dot"></span> Não configurado';
+            } else if (!logado) {
+                pill.className = 'cloud-status-pill pill-off';
+                pill.innerHTML = '<span class="dot"></span> Configurado — faça login';
+            } else if (sincronizando) {
+                pill.className = 'cloud-status-pill pill-sync';
+                pill.innerHTML = '<span class="dot"></span> Sincronizando...';
+            } else {
+                pill.className = 'cloud-status-pill pill-on';
+                const email = fb.user.email ? ' (' + fb.user.email + ')' : '';
+                pill.innerHTML = `<span class="dot"></span> Conectado${email}`;
+            }
+
+            if (acoes) acoes.style.display = logado ? 'block' : 'none';
+            if (loginFields) loginFields.style.display = logado ? 'none' : 'flex';
+            if (authBtns) authBtns.style.display = logado ? 'none' : 'flex';
+            if (loggedBtns) loggedBtns.style.display = logado ? 'flex' : 'none';
+        }
+
         // Executar após inicialização
         setTimeout(() => {
             adicionarDadosIniciais();
