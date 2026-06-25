@@ -176,6 +176,30 @@
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-weight: 600; color: var(--dark-color); }
         .tab.active { border-bottom-color: var(--secondary-color); color: var(--secondary-color); }
 
+        /* ===== Autocomplete de produtos (PDV) ===== */
+        .autocomplete-wrap { position: relative; }
+        .autocomplete-list {
+            position: absolute; left: 0; right: 0; top: 100%;
+            z-index: 300; background: #fff; border: 1px solid #ddd; border-top: none;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: 0 8px 22px rgba(0,0,0,.18);
+            max-height: 360px; overflow-y: auto; display: none;
+        }
+        .autocomplete-list.show { display: block; }
+        .sug-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f1f1; }
+        .sug-item:last-child { border-bottom: none; }
+        .sug-item:hover, .sug-item.active { background: #eaf4fd; }
+        .sug-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid #e0e0e0; flex-shrink: 0; }
+        .sug-noimg { display: flex; align-items: center; justify-content: center; background: #f3f5f7; color: #9aa4ad; font-size: 1.1rem; }
+        .sug-info { flex: 1; min-width: 0; }
+        .sug-nome { font-weight: 600; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sug-nome mark { background: #ffeaa7; color: inherit; padding: 0 1px; border-radius: 2px; }
+        .sug-meta { font-size: .8rem; color: #777; }
+        .sug-preco { font-weight: 700; color: var(--success-color); white-space: nowrap; font-size: 1.05rem; }
+        .sug-low { color: var(--warning-color); font-weight: 700; }
+        .sug-out { color: var(--accent-color); font-weight: 700; }
+        .sug-empty { padding: 16px; text-align: center; color: #999; font-size: .9rem; }
+
         /* ===== Backup em Nuvem ===== */
         .cloud-box { border: 1px solid #e3e8ee; border-radius: var(--border-radius); padding: 1.25rem; margin-top: 1rem; background: #fff; }
         .cloud-box h4 { color: var(--primary-color); margin-bottom: .75rem; display:flex; align-items:center; gap:8px; }
@@ -905,10 +929,11 @@
                 </div>
 
                 <div style="margin: 15px 0; display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label style="font-weight: bold; color: var(--secondary-color);">LEITOR DE CÓDIGO DE BARRAS (Focar aqui)</label>
-                        <input type="text" id="venda-search" placeholder="Bipe o produto ou digite o nome e aperte ENTER..." 
+                    <div style="flex: 1;" class="autocomplete-wrap">
+                        <label style="font-weight: bold; color: var(--secondary-color);">LEITOR DE CÓDIGO DE BARRAS / BUSCA (Focar aqui)</label>
+                        <input type="text" id="venda-search" placeholder="Bipe o código ou digite o nome do produto..." 
                                style="font-size: 1.2rem; border: 2px solid var(--secondary-color);" autocomplete="off">
+                        <div id="venda-suggestions" class="autocomplete-list"></div>
                     </div>
                     <div style="width: 100px;">
                         <label>Qtd</label>
@@ -2165,6 +2190,147 @@
             }, 500);
         }
 
+        // ===== AUTOCOMPLETE / SUGESTÃO DE PRODUTOS NO PDV =====
+        let sugestoesAtuais = [];
+        let sugIndex = -1;
+
+        function escHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function destacarTermo(texto, termo) {
+            const t = escHtml(texto);
+            if (!termo) return t;
+            const idx = t.toLowerCase().indexOf(termo.toLowerCase());
+            if (idx < 0) return t;
+            return t.slice(0, idx) + '<mark>' + t.slice(idx, idx + termo.length) + '</mark>' + t.slice(idx + termo.length);
+        }
+
+        function pontuarProduto(p, termo) {
+            const cod = (p.cod || '').toLowerCase();
+            const nome = (p.nome || '').toLowerCase();
+            if (cod === termo) return 0;
+            if (cod.startsWith(termo)) return 1;
+            if (nome.startsWith(termo)) return 2;
+            if (cod.includes(termo)) return 3;
+            return 4;
+        }
+
+        function buscarSugestoes(termo) {
+            termo = (termo || '').trim().toLowerCase();
+            if (!termo) return [];
+            const res = produtosCache.filter(p => {
+                const cod = (p.cod || '').toLowerCase();
+                const nome = (p.nome || '').toLowerCase();
+                return cod.includes(termo) || nome.includes(termo);
+            });
+            res.sort((a, b) => pontuarProduto(a, termo) - pontuarProduto(b, termo) || (a.nome || '').localeCompare(b.nome || ''));
+            return res.slice(0, 8);
+        }
+
+        function renderSugestoes(termo) {
+            const box = document.getElementById('venda-suggestions');
+            if (!box) return;
+            const lista = buscarSugestoes(termo);
+            sugestoesAtuais = lista;
+            sugIndex = -1;
+
+            if (!termo.trim()) { box.classList.remove('show'); box.innerHTML = ''; return; }
+
+            if (!lista.length) {
+                box.innerHTML = '<div class="sug-empty"><i class="fas fa-search"></i> Nenhum produto encontrado</div>';
+                box.classList.add('show');
+                return;
+            }
+
+            box.innerHTML = lista.map((p, i) => {
+                const estoque = parseInt(p.qtd) || 0;
+                const min = parseInt(p.min) || 0;
+                const estCls = estoque <= 0 ? 'sug-out' : (estoque <= min ? 'sug-low' : '');
+                const estTxt = estoque <= 0 ? 'Sem estoque' : 'Estoque: ' + estoque;
+                const foto = (p.foto && /^data:|^https?:/.test(p.foto))
+                    ? `<img src="${escHtml(p.foto)}" class="sug-thumb" alt="">`
+                    : `<div class="sug-thumb sug-noimg"><i class="fas fa-glasses"></i></div>`;
+                return `<div class="sug-item" data-idx="${i}" onmousedown="event.preventDefault()" onclick="selecionarSugestao(${i})">
+                    ${foto}
+                    <div class="sug-info">
+                        <div class="sug-nome">${destacarTermo(p.nome, termo)}</div>
+                        <div class="sug-meta">Cód: ${escHtml(p.cod || '-')} &middot; <span class="${estCls}">${estTxt}</span></div>
+                    </div>
+                    <div class="sug-preco">R$ ${(parseFloat(p.preco) || 0).toFixed(2)}</div>
+                </div>`;
+            }).join('');
+            box.classList.add('show');
+        }
+
+        function moverSelecao(delta) {
+            const box = document.getElementById('venda-suggestions');
+            if (!sugestoesAtuais.length) return;
+            sugIndex += delta;
+            if (sugIndex < 0) sugIndex = sugestoesAtuais.length - 1;
+            if (sugIndex >= sugestoesAtuais.length) sugIndex = 0;
+            Array.from(box.children).forEach((el, i) => el.classList.toggle('active', i === sugIndex));
+            const ativo = box.children[sugIndex];
+            if (ativo && ativo.scrollIntoView) ativo.scrollIntoView({ block: 'nearest' });
+        }
+
+        function fecharSugestoes() {
+            const box = document.getElementById('venda-suggestions');
+            if (box) { box.classList.remove('show'); box.innerHTML = ''; }
+            sugestoesAtuais = [];
+            sugIndex = -1;
+        }
+
+        function selecionarSugestao(i) {
+            const prod = sugestoesAtuais[i];
+            if (prod) adicionarProdutoPDV(prod);
+        }
+
+        function beepPDV() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square'; osc.frequency.value = 880;
+                gain.gain.value = 0.05;
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+                osc.onended = () => ctx.close();
+            } catch (e) {}
+        }
+
+        function adicionarProdutoPDV(prod) {
+            if (!prod) return;
+            const qtd = parseInt(document.getElementById('venda-qtd-add').value) || 1;
+            addAoCarrinho(prod, qtd);
+            const inp = document.getElementById('venda-search');
+            inp.value = '';
+            document.getElementById('venda-qtd-add').value = 1;
+            fecharSugestoes();
+            inp.focus();
+            beepPDV();
+        }
+
+        // Resolve qual produto adicionar ao apertar ENTER
+        function resolverProdutoEnter(termo) {
+            termo = (termo || '').trim();
+            if (!termo) return null;
+            // 1) código exato (caso do leitor de código de barras)
+            const exato = produtosCache.find(p => (p.cod || '') === termo);
+            if (exato) return exato;
+            // 2) item destacado na lista de sugestões
+            if (sugIndex >= 0 && sugestoesAtuais[sugIndex]) return sugestoesAtuais[sugIndex];
+            // 3) primeira sugestão disponível
+            if (sugestoesAtuais.length) return sugestoesAtuais[0];
+            // 4) único produto cujo nome corresponde
+            const matches = produtosCache.filter(p => (p.nome || '').toLowerCase().includes(termo.toLowerCase()));
+            if (matches.length === 1) return matches[0];
+            return null;
+        }
+
         function addAoCarrinho(prod, qtd) {
             const existe = carrinho.find(i => i.id === prod.id);
             if(existe) {
@@ -3316,35 +3482,42 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
                 };
             }
             
-            // Configurar leitor de código de barras no PDV
+            // Configurar leitor de código de barras + autocomplete no PDV
             const vendaSearch = document.getElementById('venda-search');
             if (vendaSearch) {
+                // Sugestões enquanto digita
+                vendaSearch.addEventListener('input', function() {
+                    renderSugestoes(this.value);
+                });
+
+                // Reabrir sugestões ao focar (se já houver texto)
+                vendaSearch.addEventListener('focus', function() {
+                    if (this.value.trim()) renderSugestoes(this.value);
+                });
+
                 vendaSearch.addEventListener('keydown', function(e) {
-                    if(e.key === 'Enter') {
+                    if (e.key === 'ArrowDown') {
+                        if (sugestoesAtuais.length) { e.preventDefault(); moverSelecao(1); }
+                    } else if (e.key === 'ArrowUp') {
+                        if (sugestoesAtuais.length) { e.preventDefault(); moverSelecao(-1); }
+                    } else if (e.key === 'Escape') {
+                        fecharSugestoes();
+                    } else if (e.key === 'Enter') {
                         e.preventDefault();
                         const termo = this.value.trim();
-                        if(!termo) return;
-
-                        // Busca exata por código ou parcial por nome
-                        let prod = produtosCache.find(p => p.cod === termo);
-                        
-                        if(!prod) {
-                            // Se não achou código, tenta nome
-                            const matches = produtosCache.filter(p => p.nome.toLowerCase().includes(termo.toLowerCase()));
-                            if(matches.length === 1) prod = matches[0];
-                        }
-
-                        if(prod) {
-                            const qtd = parseInt(document.getElementById('venda-qtd-add').value) || 1;
-                            addAoCarrinho(prod, qtd);
-                            this.value = '';
-                            document.getElementById('venda-qtd-add').value = 1;
-                            // Beep sound simulation
-                            try { new AudioContext().createOscillator().start().stop(); } catch(e) {}
+                        if (!termo) return;
+                        const prod = resolverProdutoEnter(termo);
+                        if (prod) {
+                            adicionarProdutoPDV(prod);
                         } else {
                             alert('Produto não encontrado!');
                         }
                     }
+                });
+
+                // Fecha a lista ao perder o foco (com pequeno atraso p/ permitir o clique)
+                vendaSearch.addEventListener('blur', function() {
+                    setTimeout(fecharSugestoes, 150);
                 });
             }
             
