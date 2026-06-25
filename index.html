@@ -176,6 +176,19 @@
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-weight: 600; color: var(--dark-color); }
         .tab.active { border-bottom-color: var(--secondary-color); color: var(--secondary-color); }
 
+        /* ===== Toast de sincronização em tempo real ===== */
+        #sync-toast {
+            position: fixed; left: 50%; transform: translateX(-50%) translateY(20px);
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            z-index: 10050; background: var(--success-color, #27ae60); color: #fff;
+            padding: 10px 18px; border-radius: 30px; font-size: 14px; font-weight: 600;
+            box-shadow: 0 6px 20px rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px;
+            opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+        }
+        #sync-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        #sync-toast i { animation: syncSpin 1s ease; }
+        @keyframes syncSpin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
         /* ===== Login com Google ===== */
         .btn-google {
             width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -3822,6 +3835,20 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         let sincronizando = false;
         let bloquearSeed = false; // evita semear dados de exemplo quando há usuário na nuvem
 
+        // ----- Sincronismo em tempo real -----
+        let deviceId = (function () {
+            try {
+                let id = localStorage.getItem('deviceId');
+                if (!id) { id = 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('deviceId', id); }
+                return id;
+            } catch (e) { return 'dev_' + Date.now(); }
+        })();
+        let aplicandoRemoto = false;   // true enquanto aplica dados vindos de outro dispositivo
+        let pushTimer = null;          // debounce do envio após gravações locais
+        let unsubRealtime = null;      // função para cancelar o listener do Firestore
+        let realtimeAtivo = false;
+        let ultimoRevAplicado = 0;     // última revisão remota processada
+
         function getFirebaseConfig() {
             try {
                 const raw = localStorage.getItem('firebaseConfig');
@@ -3907,7 +3934,7 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
                             const appVisivel = appEl && appEl.style.display === 'flex';
                             if (!appVisivel) aplicarLoginFirebase(u);
                             sincronizarAposLogin();
-                        } else if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+                        } else { pararRealtime(); if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; } }
                     });
                     // Conclui fluxo de login por redirecionamento (mobile/PWA), se houver
                     try { await sdk.authMod.getRedirectResult(fb.auth); } catch (e) { console.warn('getRedirectResult:', e); }
@@ -3944,6 +3971,7 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
 
         async function cloudLogout() {
             if (fb.auth) { try { await fb.sdk.authMod.signOut(fb.auth); } catch (e) {} }
+            pararRealtime();
             if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
             atualizarUICloud();
         }
@@ -4054,10 +4082,12 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
                     await Promise.all(remocoes);
                 }
 
-                // Metadados gerais do backup
+                // Metadados gerais do backup (origem + rev permitem o sincronismo em tempo real)
                 await setDoc(doc(fb.fs, 'usuarios', uid, 'meta', 'backup'), {
                     atualizadoEm: new Date().toISOString(),
                     dispositivo: navigator.userAgent,
+                    origem: deviceId,
+                    rev: Date.now(),
                     dbVersion: DB_VERSION
                 });
 
@@ -4074,35 +4104,42 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             }
         }
 
+        // Lê o snapshot completo armazenado na nuvem (sem aplicar nada)
+        async function lerSnapshotNuvem() {
+            const { doc, getDoc, collection, getDocs } = fb.sdk.fsMod;
+            const uid = fb.user.uid;
+            const snapshot = { meta: { lidoEm: new Date().toISOString() }, stores: {} };
+            let encontrou = false;
+            for (const store of BACKUP_STORES) {
+                const metaSnap = await getDoc(doc(fb.fs, 'usuarios', uid, 'backup', store));
+                if (!metaSnap.exists()) continue;
+                encontrou = true;
+                const chunkDocs = await getDocs(collection(fb.fs, 'usuarios', uid, 'backup', store, 'chunks'));
+                const ordenados = chunkDocs.docs.slice().sort((a, b) => Number(a.id) - Number(b.id));
+                let recs = [];
+                ordenados.forEach(d => {
+                    const data = d.data();
+                    if (data && data.records) { try { recs = recs.concat(JSON.parse(data.records)); } catch (e) {} }
+                });
+                snapshot.stores[store] = recs;
+            }
+            return encontrou ? snapshot : null;
+        }
+
         async function restaurarDaNuvem(semConfirmar) {
             if (!fb.user) { alert('Faça login na conta de nuvem primeiro.'); return; }
             if (!navigator.onLine) { alert('Sem conexão com a internet.'); return; }
             if (!semConfirmar && !confirm('Isto irá SUBSTITUIR todos os dados locais pelos dados salvos na nuvem. Deseja continuar?')) return;
             try {
-                const { doc, getDoc, collection, getDocs } = fb.sdk.fsMod;
-                const uid = fb.user.uid;
-                const snapshot = { meta: { restauradoEm: new Date().toISOString() }, stores: {} };
-                let encontrou = false;
-
-                for (const store of BACKUP_STORES) {
-                    const metaSnap = await getDoc(doc(fb.fs, 'usuarios', uid, 'backup', store));
-                    if (!metaSnap.exists()) continue;
-                    encontrou = true;
-                    const chunkDocs = await getDocs(collection(fb.fs, 'usuarios', uid, 'backup', store, 'chunks'));
-                    const ordenados = chunkDocs.docs.slice().sort((a, b) => Number(a.id) - Number(b.id));
-                    let recs = [];
-                    ordenados.forEach(d => {
-                        const data = d.data();
-                        if (data && data.records) { try { recs = recs.concat(JSON.parse(data.records)); } catch (e) {} }
-                    });
-                    snapshot.stores[store] = recs;
-                }
-
-                if (!encontrou) { alert('Nenhum backup encontrado na nuvem para esta conta.'); return; }
+                const snapshot = await lerSnapshotNuvem();
+                if (!snapshot) { alert('Nenhum backup encontrado na nuvem para esta conta.'); return; }
+                aplicandoRemoto = true;
                 await aplicarSnapshot(snapshot);
+                aplicandoRemoto = false;
                 alert('Dados restaurados da nuvem com sucesso! A página será recarregada.');
                 location.reload();
             } catch (e) {
+                aplicandoRemoto = false;
                 console.error('Erro ao restaurar da nuvem:', e);
                 alert('Erro ao restaurar da nuvem: ' + (e.message || e));
             }
@@ -4127,8 +4164,14 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
 
                 const metaSnap = await getDoc(doc(fb.fs, 'usuarios', uid, 'meta', 'backup'));
                 const temNuvem = metaSnap.exists();
+                const metaData = temNuvem ? (metaSnap.data() || {}) : null;
                 const local = await coletarTodosDados();
                 const vazio = dadosLocaisVazios(local);
+
+                // Se este dispositivo foi o último a gravar, marca a revisão para não re-puxar
+                if (metaData && metaData.origem === deviceId) {
+                    ultimoRevAplicado = metaData.rev || 0;
+                }
 
                 if (temNuvem && !jaConhecido) {
                     // Primeiro acesso desta conta NESTE dispositivo: oferece restaurar
@@ -4154,7 +4197,153 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
 
                 ultimaAssinatura = assinaturaDados(local);
                 if (autoSyncAtivo()) iniciarAutoSync();
+
+                // Ativa o sincronismo em tempo real entre dispositivos conectados
+                instalarHookSync();
+                iniciarRealtime();
             } catch (e) { console.warn('Sincronização pós-login falhou:', e); }
+        }
+
+        // ===================================================================
+        // ================== SINCRONISMO EM TEMPO REAL ======================
+        // ===================================================================
+        // Quando dois (ou mais) dispositivos estão conectados na mesma conta,
+        // cada gravação local é enviada à nuvem (debounce ~1,5s) e os demais
+        // dispositivos recebem a mudança via listener do Firestore (onSnapshot),
+        // aplicando-a localmente quase instantaneamente.
+
+        // Agenda o envio para a nuvem logo após gravações locais (debounced)
+        function agendarPushNuvem() {
+            if (aplicandoRemoto) return;                 // não reenvia o que acabou de chegar
+            if (!fb.user || !autoSyncAtivo() || !navigator.onLine) return;
+            if (pushTimer) clearTimeout(pushTimer);
+            pushTimer = setTimeout(() => { verificarAutoSync(); }, 1500);
+        }
+
+        // Intercepta transações de escrita do IndexedDB para disparar a sincronização
+        function instalarHookSync() {
+            if (!db || db._hookSyncInstalado) return;
+            const origTransaction = db.transaction.bind(db);
+            db.transaction = function (stores, mode) {
+                const tx = origTransaction.apply(db, arguments);
+                try {
+                    if (mode === 'readwrite' && !aplicandoRemoto) {
+                        tx.addEventListener('complete', agendarPushNuvem);
+                    }
+                } catch (e) {}
+                return tx;
+            };
+            db._hookSyncInstalado = true;
+        }
+
+        // Listener em tempo real do documento de metadados
+        function iniciarRealtime() {
+            if (!fb.user || !fb.iniciado || !fb.fs) return;
+            if (unsubRealtime) { try { unsubRealtime(); } catch (e) {} unsubRealtime = null; }
+            const { doc, onSnapshot } = fb.sdk.fsMod;
+            const ref = doc(fb.fs, 'usuarios', fb.user.uid, 'meta', 'backup');
+            unsubRealtime = onSnapshot(ref, async (snap) => {
+                if (!snap.exists()) return;
+                // Ignora atualizações otimistas locais (ainda não confirmadas pelo servidor)
+                if (snap.metadata && snap.metadata.hasPendingWrites) return;
+                const data = snap.data() || {};
+                if (data.origem === deviceId) { ultimoRevAplicado = data.rev || ultimoRevAplicado; return; }
+                const rev = data.rev || Date.parse(data.atualizadoEm) || 0;
+                if (rev && rev === ultimoRevAplicado) return; // já aplicado
+                ultimoRevAplicado = rev;
+                await puxarEAplicarRemoto();
+            }, (err) => console.warn('Realtime listener erro:', err));
+            realtimeAtivo = true;
+            atualizarUICloud();
+        }
+
+        function pararRealtime() {
+            if (unsubRealtime) { try { unsubRealtime(); } catch (e) {} unsubRealtime = null; }
+            realtimeAtivo = false;
+        }
+
+        // Recarrega os caches em memória a partir do IndexedDB
+        function recarregarCaches() {
+            return new Promise((resolve) => {
+                const mapa = [
+                    ['clientes', 'clientesCache'], ['produtos', 'produtosCache'],
+                    ['vendedores', 'vendedoresCache'], ['fornecedores', 'fornecedoresCache'],
+                    ['ordens_servico', 'osCache'], ['consultas', 'consultasCache']
+                ];
+                let pend = mapa.length;
+                mapa.forEach(([store, cache]) => {
+                    try {
+                        db.transaction(store, 'readonly').objectStore(store).getAll().onsuccess = function (e) {
+                            window[cache] = e.target.result || [];
+                            if (--pend === 0) resolve();
+                        };
+                    } catch (e) { if (--pend === 0) resolve(); }
+                });
+                // recarrega config também
+                try {
+                    db.transaction('config', 'readonly').objectStore('config').get(1).onsuccess = function (e) {
+                        if (e.target.result) { config = e.target.result; applyConfig(); }
+                    };
+                } catch (e) {}
+            });
+        }
+
+        // Re-renderiza a página atualmente visível (sem trocar de aba)
+        function renderizarPaginaAtual() {
+            const ativa = document.querySelector('.page.active');
+            if (!ativa) return;
+            const id = ativa.id.replace(/-page$/, '');
+            try {
+                switch (id) {
+                    case 'produtos': listarProdutos(); break;
+                    case 'clientes': listarClientes(); break;
+                    case 'vendas': if (typeof listarVendas === 'function') listarVendas(); break;
+                    case 'orcamentos': if (typeof listarOrcamentos === 'function') listarOrcamentos(); break;
+                    case 'ordens-servico': listarOS(); break;
+                    case 'consultas': if (typeof listarConsultas === 'function') listarConsultas(); break;
+                    case 'fornecedores': listarFornecedores(); break;
+                    case 'dashboard': updateDashboard(); break;
+                    case 'relatorios': if (typeof carregarRelatorios === 'function') carregarRelatorios(); break;
+                }
+            } catch (e) { console.warn('Falha ao re-renderizar página:', e); }
+        }
+
+        // Puxa o snapshot remoto e aplica localmente, atualizando a tela
+        async function puxarEAplicarRemoto() {
+            if (aplicandoRemoto) return;
+            aplicandoRemoto = true;
+            try {
+                const snapshot = await lerSnapshotNuvem();
+                if (snapshot && Object.keys(snapshot.stores).length) {
+                    await aplicarSnapshot(snapshot);
+                    ultimaAssinatura = assinaturaDados(snapshot);
+                    await recarregarCaches();
+                    // Evita interromper o usuário se houver modal aberto ou venda em andamento
+                    const modalAberto = !!document.querySelector('.modal.active');
+                    const vendaEmAndamento = (typeof carrinho !== 'undefined' && carrinho && carrinho.length > 0);
+                    if (!modalAberto && !vendaEmAndamento) {
+                        renderizarPaginaAtual();
+                    }
+                    mostrarToastSync();
+                }
+            } catch (e) {
+                console.warn('Falha ao aplicar dados remotos:', e);
+            } finally {
+                aplicandoRemoto = false;
+            }
+        }
+
+        function mostrarToastSync() {
+            let t = document.getElementById('sync-toast');
+            if (!t) {
+                t = document.createElement('div');
+                t.id = 'sync-toast';
+                document.body.appendChild(t);
+            }
+            t.innerHTML = '<i class="fas fa-sync-alt"></i> Dados atualizados de outro dispositivo';
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.remove('show'), 3500);
         }
 
         function alternarAutoSync(ativo) {
@@ -4219,7 +4408,8 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             } else {
                 pill.className = 'cloud-status-pill pill-on';
                 const email = fb.user.email ? ' (' + fb.user.email + ')' : '';
-                pill.innerHTML = `<span class="dot"></span> Conectado${email}`;
+                const rt = realtimeAtivo ? ' &middot; tempo real' : '';
+                pill.innerHTML = `<span class="dot"></span> Conectado${email}${rt}`;
             }
 
             if (acoes) acoes.style.display = logado ? 'block' : 'none';
