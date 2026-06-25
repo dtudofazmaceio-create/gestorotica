@@ -3594,6 +3594,17 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         // ======================= BACKUP EM NUVEM ===========================
         // ===================================================================
         const FIREBASE_VER = '10.12.2';
+        // Projeto Firebase padrão (já configurado). Pode ser sobrescrito por
+        // uma configuração salva localmente em "Configurar projeto Firebase".
+        const FIREBASE_CONFIG_PADRAO = {
+            apiKey: "AIzaSyB-5znSyrtwOoMnItseBgfKRPKWPjdsmF4",
+            authDomain: "academico-full.firebaseapp.com",
+            projectId: "academico-full",
+            storageBucket: "academico-full.firebasestorage.app",
+            messagingSenderId: "12650870131",
+            appId: "1:12650870131:web:f87c4e552a30a55f734106",
+            measurementId: "G-MBGSZVR63E"
+        };
         const CHUNK_BYTES = 600 * 1024; // ~600KB por documento (limite do Firestore é 1MB)
         let fb = { app: null, auth: null, fs: null, user: null, sdk: null, iniciado: false };
         let ultimaAssinatura = null;
@@ -3603,10 +3614,14 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         function getFirebaseConfig() {
             try {
                 const raw = localStorage.getItem('firebaseConfig');
-                if (!raw) return null;
-                const cfg = JSON.parse(raw);
-                return (cfg && cfg.apiKey && cfg.projectId) ? cfg : null;
-            } catch (e) { return null; }
+                if (raw) {
+                    const cfg = JSON.parse(raw);
+                    if (cfg && cfg.apiKey && cfg.projectId) return cfg;
+                }
+            } catch (e) {}
+            // Sem config salva: usa o projeto padrão embutido
+            return (FIREBASE_CONFIG_PADRAO.apiKey && FIREBASE_CONFIG_PADRAO.projectId)
+                ? FIREBASE_CONFIG_PADRAO : null;
         }
         function autoSyncAtivo() { return localStorage.getItem('autoSyncNuvem') === '1'; }
 
@@ -3638,7 +3653,7 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         }
 
         function limparFirebaseConfig() {
-            if (!confirm('Remover a configuração do Firebase deste dispositivo? O backup em nuvem deixará de funcionar até ser reconfigurado.')) return;
+            if (!confirm('Remover a configuração personalizada deste dispositivo? O sistema voltará a usar o projeto Firebase padrão.')) return;
             localStorage.removeItem('firebaseConfig');
             localStorage.removeItem('autoSyncNuvem');
             fb = { app: null, auth: null, fs: null, user: null, sdk: null, iniciado: false };
