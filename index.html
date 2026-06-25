@@ -176,6 +176,19 @@
         .tab { padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; transition: 0.3s; font-weight: 600; color: var(--dark-color); }
         .tab.active { border-bottom-color: var(--secondary-color); color: var(--secondary-color); }
 
+        /* ===== Login com Google ===== */
+        .btn-google {
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 12px; border: 1px solid #dadce0; border-radius: var(--border-radius);
+            background: #fff; color: #3c4043; font-size: 1rem; font-weight: 600; cursor: pointer; transition: .2s;
+        }
+        .btn-google:hover { background: #f7f8f8; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+        .btn-google:disabled { opacity: .6; cursor: default; }
+        .btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .login-google-hint { font-size: .8rem; color: #27ae60; margin-top: 8px; }
+        .login-divider { display: flex; align-items: center; text-align: center; color: #aaa; font-size: .78rem; margin: 18px 0; gap: 10px; text-transform: uppercase; letter-spacing: .5px; }
+        .login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: #e6e6e6; }
+
         /* ===== Autocomplete de produtos (PDV) ===== */
         .autocomplete-wrap { position: relative; }
         .autocomplete-list {
@@ -247,13 +260,26 @@
             <i class="fas fa-glasses fa-3x" style="color: var(--primary-color); margin-bottom: 10px;"></i>
             <h2>VisionPlus Premium</h2>
             <p style="color: #666; margin-bottom: 20px;">Sistema Completo de Gestão Ótica</p>
+
+            <button type="button" id="google-login-btn" class="btn-google" onclick="loginComGoogle()">
+                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                </svg>
+                Entrar com Google
+            </button>
+            <div class="login-google-hint"><i class="fas fa-cloud"></i> Acesse seus dados de qualquer dispositivo</div>
+
+            <div class="login-divider"><span>ou acesso local</span></div>
+
             <form id="login-form">
-                <input type="text" id="login-user" class="login-input" placeholder="Usuário" required value="admin">
-                <input type="password" id="login-pass" class="login-input" placeholder="Senha" required value="admin">
+                <input type="text" id="login-user" class="login-input" placeholder="Usuário" autocomplete="username">
+                <input type="password" id="login-pass" class="login-input" placeholder="Senha" autocomplete="current-password">
                 <button type="submit" class="btn btn-primary" style="width: 100%;">ENTRAR</button>
                 <div class="login-error" id="login-error">Usuário ou senha incorretos!</div>
             </form>
-            <p style="margin-top: 15px; font-size: 0.8rem; color: #666;">Use: admin / admin</p>
         </div>
     </div>
 
@@ -1394,8 +1420,8 @@
                 // Verificar autenticação
                 checkAuth();
 
-                // Inicializar backup em nuvem (se já configurado neste dispositivo)
-                setTimeout(inicializarBackupNuvem, 1200);
+                // Inicializar backup em nuvem / login Google (sessão persistida)
+                setTimeout(inicializarBackupNuvem, 300);
             };
             
             request.onerror = function(e) {
@@ -1483,6 +1509,14 @@
                 mostrarErroLogin();
                 return false;
             }
+        }
+
+        // Entra no sistema a partir de um usuário autenticado no Firebase (Google)
+        function aplicarLoginFirebase(u) {
+            if (!u) return;
+            usuarioAtual = u.displayName || u.email || 'Usuário Google';
+            sessionStorage.setItem('user', usuarioAtual);
+            mostrarSistema();
         }
 
         function mostrarErroLogin() {
@@ -3476,8 +3510,10 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             // Botão de logout
             const logoutBtn = document.getElementById('logout-btn');
             if (logoutBtn) {
-                logoutBtn.onclick = function() {
+                logoutBtn.onclick = async function() {
+                    try { if (fb.auth && fb.user) await fb.sdk.authMod.signOut(fb.auth); } catch (e) {}
                     sessionStorage.removeItem('user');
+                    sessionStorage.removeItem('authProvider');
                     location.reload();
                 };
             }
@@ -3527,6 +3563,7 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         // Adicionar dados iniciais para teste se o banco estiver vazio
         function adicionarDadosIniciais() {
             console.log('Verificando dados iniciais...');
+            if (bloquearSeed) { console.log('Seed ignorado: usuário de nuvem ativo.'); return; }
             const tx = db.transaction('config', 'readonly');
             tx.objectStore('config').get(1).onsuccess = function(e) {
                 if (!e.target.result) {
@@ -3783,6 +3820,7 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
         let ultimaAssinatura = null;
         let autoSyncTimer = null;
         let sincronizando = false;
+        let bloquearSeed = false; // evita semear dados de exemplo quando há usuário na nuvem
 
         function getFirebaseConfig() {
             try {
@@ -3861,9 +3899,18 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
                     sdk.authMod.onAuthStateChanged(fb.auth, u => {
                         fb.user = u;
                         atualizarUICloud();
-                        if (u) sincronizarAposLogin();
-                        else if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
+                        if (u) {
+                            bloquearSeed = true;
+                            // Se o app ainda não está aberto (login com Google ou
+                            // sessão persistida), entra automaticamente no sistema.
+                            const appEl = document.getElementById('app-container');
+                            const appVisivel = appEl && appEl.style.display === 'flex';
+                            if (!appVisivel) aplicarLoginFirebase(u);
+                            sincronizarAposLogin();
+                        } else if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
                     });
+                    // Conclui fluxo de login por redirecionamento (mobile/PWA), se houver
+                    try { await sdk.authMod.getRedirectResult(fb.auth); } catch (e) { console.warn('getRedirectResult:', e); }
                 }
                 atualizarUICloud();
                 return true;
@@ -3899,6 +3946,46 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             if (fb.auth) { try { await fb.sdk.authMod.signOut(fb.auth); } catch (e) {} }
             if (autoSyncTimer) { clearInterval(autoSyncTimer); autoSyncTimer = null; }
             atualizarUICloud();
+        }
+
+        // ---------- Login com Google (acesso de qualquer dispositivo) ----------
+        async function loginComGoogle() {
+            const btn = document.getElementById('google-login-btn');
+            if (btn) { btn.disabled = true; }
+            try {
+                const ok = await inicializarBackupNuvem();
+                if (!ok) {
+                    alert('Login com Google indisponível no momento. Verifique a conexão com a internet e tente novamente.');
+                    return;
+                }
+                const { GoogleAuthProvider, signInWithPopup, signInWithRedirect } = fb.sdk.authMod;
+                const provider = new GoogleAuthProvider();
+                sessionStorage.setItem('authProvider', 'google');
+                try {
+                    await signInWithPopup(fb.auth, provider);
+                    // onAuthStateChanged cuida de entrar no sistema e sincronizar
+                } catch (e) {
+                    const code = e && e.code ? e.code : '';
+                    if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+                        return; // usuário fechou a janela
+                    }
+                    if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') {
+                        // Em PWA/instalado o popup pode ser bloqueado: usa redirecionamento
+                        await signInWithRedirect(fb.auth, provider);
+                        return;
+                    }
+                    if (code === 'auth/unauthorized-domain') {
+                        alert('Este domínio não está autorizado no Firebase.\n\nNo Console do Firebase → Authentication → Settings → Authorized domains, adicione o domínio onde o sistema está hospedado.');
+                        return;
+                    }
+                    alert('Não foi possível entrar com Google: ' + traduzErroFirebase(e));
+                }
+            } catch (e) {
+                console.error('Erro no login com Google:', e);
+                alert('Não foi possível entrar com Google: ' + (e.message || e));
+            } finally {
+                if (btn) { btn.disabled = false; }
+            }
         }
 
         async function garantirFirebase() {
@@ -3987,10 +4074,10 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             }
         }
 
-        async function restaurarDaNuvem() {
+        async function restaurarDaNuvem(semConfirmar) {
             if (!fb.user) { alert('Faça login na conta de nuvem primeiro.'); return; }
             if (!navigator.onLine) { alert('Sem conexão com a internet.'); return; }
-            if (!confirm('Isto irá SUBSTITUIR todos os dados locais pelos dados salvos na nuvem. Deseja continuar?')) return;
+            if (!semConfirmar && !confirm('Isto irá SUBSTITUIR todos os dados locais pelos dados salvos na nuvem. Deseja continuar?')) return;
             try {
                 const { doc, getDoc, collection, getDocs } = fb.sdk.fsMod;
                 const uid = fb.user.uid;
@@ -4021,25 +4108,50 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             }
         }
 
-        // Decide o que fazer logo após o login (evita apagar a nuvem com base vazia)
+        // Habilita auto-sync por padrão (sem sobrescrever escolha do usuário)
+        function ativarAutoSyncSilencioso() {
+            if (localStorage.getItem('autoSyncNuvem') === null) localStorage.setItem('autoSyncNuvem', '1');
+            const tgl = document.getElementById('auto-sync-toggle');
+            if (tgl) tgl.checked = autoSyncAtivo();
+        }
+
+        // Decide o que fazer logo após o login, com proteção contra perda de dados.
+        // Em um dispositivo NOVO para esta conta, oferece carregar os dados da nuvem.
         async function sincronizarAposLogin() {
             atualizarUICloud();
             try {
                 const { doc, getDoc } = fb.sdk.fsMod;
-                const metaSnap = await getDoc(doc(fb.fs, 'usuarios', fb.user.uid, 'meta', 'backup'));
+                const uid = fb.user.uid;
+                const chaveDisp = 'deviceSync_' + uid;
+                const jaConhecido = localStorage.getItem(chaveDisp) === '1';
+
+                const metaSnap = await getDoc(doc(fb.fs, 'usuarios', uid, 'meta', 'backup'));
+                const temNuvem = metaSnap.exists();
                 const local = await coletarTodosDados();
                 const vazio = dadosLocaisVazios(local);
 
-                if (metaSnap.exists() && vazio) {
-                    // Dispositivo novo / sem dados: oferece restaurar a nuvem
-                    if (confirm('Encontramos um backup na nuvem e este dispositivo está sem dados. Deseja restaurar agora?')) {
-                        await restaurarDaNuvem();
-                        return;
+                if (temNuvem && !jaConhecido) {
+                    // Primeiro acesso desta conta NESTE dispositivo: oferece restaurar
+                    localStorage.setItem(chaveDisp, '1');
+                    const msg = vazio
+                        ? 'Encontramos seus dados salvos na nuvem. Deseja carregá-los neste dispositivo agora?'
+                        : 'Encontramos dados salvos na nuvem para esta conta. Deseja carregá-los neste dispositivo? Isto substituirá os dados locais atuais.';
+                    if (confirm(msg)) {
+                        ativarAutoSyncSilencioso();
+                        await restaurarDaNuvem(true);
+                        return; // restaurarDaNuvem recarrega a página
                     }
-                } else if (autoSyncAtivo() && !vazio) {
-                    // Há dados locais: envia o estado atual
-                    await backupParaNuvem(true);
+                    // Se recusou, não habilita o envio automático para não sobrescrever a nuvem
+                } else if (!temNuvem) {
+                    // Primeira vez na nuvem (conta nova): cria o backup inicial
+                    localStorage.setItem(chaveDisp, '1');
+                    ativarAutoSyncSilencioso();
+                    if (!vazio) await backupParaNuvem(true);
+                } else {
+                    // Dispositivo já conhecido: envia alterações pendentes
+                    if (autoSyncAtivo() && !vazio) await backupParaNuvem(true);
                 }
+
                 ultimaAssinatura = assinaturaDados(local);
                 if (autoSyncAtivo()) iniciarAutoSync();
             } catch (e) { console.warn('Sincronização pós-login falhou:', e); }
@@ -4116,10 +4228,10 @@ ${config.tel ? `Telefone: ${config.tel}` : ''}`;
             if (loggedBtns) loggedBtns.style.display = logado ? 'flex' : 'none';
         }
 
-        // Executar após inicialização
+        // Executar após inicialização (após o estado de login da nuvem assentar)
         setTimeout(() => {
             adicionarDadosIniciais();
-        }, 1000);
+        }, 1800);
     </script>
 
     <!-- ======================= PWA: estilos ======================= -->
